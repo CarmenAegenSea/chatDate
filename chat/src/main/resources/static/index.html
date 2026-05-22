@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat 测试页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+        h2 { font-size: 18px; margin-bottom: 12px; color: #1a1a1a; }
+        input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; margin-bottom: 10px; }
+        input:focus, textarea:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,.1); }
+        textarea { min-height: 80px; resize: vertical; }
+        button { padding: 8px 20px; background: #1677ff; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+        button:hover { background: #4096ff; }
+        button.danger { background: #ff4d4f; }
+        button.danger:hover { background: #ff7875; }
+        button.sm { padding: 4px 12px; font-size: 12px; }
+        .row { display: flex; gap: 10px; align-items: center; }
+        .post-item { border-bottom: 1px solid #f0f0f0; padding: 12px 0; }
+        .post-item:last-child { border-bottom: none; }
+        .post-title { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+        .post-meta { font-size: 12px; color: #999; margin-top: 4px; }
+        .post-content { margin-top: 8px; color: #555; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+        .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tab-bar button { background: #e8e8e8; color: #333; flex: 1; min-width: 60px; }
+        .tab-bar button.active { background: #1677ff; color: #fff; }
+        .hidden { display: none; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 24px; border-radius: 6px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        label { display: block; font-size: 13px; color: #666; margin-bottom: 2px; }
+        .user-info { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+        .user-info .avatar { width: 40px; height: 40px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; }
+        .user-info .name { font-size: 16px; font-weight: 600; }
+        .user-info .phone { font-size: 13px; color: #999; }
+        .badge { background: #f0f0f0; color: #666; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+        .loading { text-align: center; color: #999; padding: 20px; }
+        .empty { text-align: center; color: #ccc; padding: 40px 0; font-size: 14px; }
+        .result { margin-top: 8px; font-size: 13px; color: #666; }
+        .divider { height: 1px; background: #f0f0f0; margin: 12px 0; }
+        .like-btn { background: none; border: 1px solid #e0e0e0; border-radius: 20px; padding: 4px 14px; font-size: 13px; cursor: pointer; color: #666; }
+        .like-btn:hover { border-color: #ff4d4f; color: #ff4d4f; background: #fff2f0; }
+        .like-btn.liked { border-color: #ff4d4f; color: #ff4d4f; background: #fff2f0; }
+        .like-btn:disabled { cursor: default; opacity: 0.7; }
+        .comment-btn { background: none; border: 1px solid #e0e0e0; border-radius: 20px; padding: 4px 14px; font-size: 13px; cursor: pointer; color: #666; }
+        .comment-btn:hover { border-color: #1677ff; color: #1677ff; background: #f0f5ff; }
+        .comment-section { margin-top: 12px; padding: 12px; background: #fafafa; border-radius: 8px; }
+        .comment-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #555; }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-meta { font-size: 11px; color: #bbb; margin-top: 2px; }
+        .comment-input { width: calc(100% - 60px); padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; margin-right: 8px; }
+        .comment-input:focus { border-color: #1677ff; }
+        .post-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .comment-submit { padding: 6px 16px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="margin-bottom:20px;">Chat 测试面板</h1>
+        <a href="index.html" style="display:inline-block;margin-bottom:16px;color:#1677ff;">跳转到首页</a>
+
+        <div id="userSection" class="card hidden">
+            <div class="user-info">
+                <div class="avatar" id="avatarLetter">U</div>
+                <div>
+                    <div class="name" id="displayName">用户</div>
+                    <div class="phone" id="displayPhone">手机号</div>
+                    <div class="phone" style="color:#f5a623;font-size:13px;" id="displayBalance">余额: 0</div>
+                </div>
+            </div>
+            <div style="margin-top:8px;">
+                <span class="badge">已登录</span>
+                <button class="danger sm" style="margin-left:8px;" onclick="logout()">退出</button>
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input id="nicknameInput" style="flex:1;margin:0;min-width:120px;" maxlength="32" placeholder="新昵称">
+                <button class="sm" onclick="updateNickname()">修改昵称</button>
+                <span class="result" id="nicknameResult"></span>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="active" onclick="switchTab('login')">登录</button>
+            <button onclick="switchTab('post')">发帖</button>
+            <button onclick="switchTab('list')">列表</button>
+        </div>
+
+        <!-- 登录/注册 -->
+        <div id="loginTab" class="card">
+            <div class="tab-bar" style="margin-bottom:12px;">
+                <button class="active" onclick="switchAuthTab('login')">登录</button>
+                <button onclick="switchAuthTab('register')">注册</button>
+            </div>
+
+            <div id="authLogin">
+                <h2>手机号+密码登录</h2>
+                <div><label>手机号</label><input id="loginPhone" placeholder="13800138000" maxlength="11"></div>
+                <div><label>密码</label><input id="loginPassword" type="password" placeholder="密码 (至少6位)"></div>
+                <button onclick="login()">登录</button>
+                <div class="result" id="loginResult"></div>
+            </div>
+
+            <div id="authRegister" class="hidden">
+                <h2>手机号注册</h2>
+                <div><label>手机号</label><input id="regPhone" placeholder="13800138000" maxlength="11"></div>
+                <div><label>密码</label><input id="regPassword" type="password" placeholder="密码 (至少6位)"></div>
+                <div><label>确认密码</label><input id="regPassword2" type="password" placeholder="再次输入密码"></div>
+                <button onclick="register()">注册</button>
+                <div class="result" id="regResult"></div>
+            </div>
+
+            <div class="divider"></div>
+            <div style="text-align:center;font-size:13px;color:#999;margin-bottom:8px;">第三方登录</div>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button style="background:#07c160;flex:1;" onclick="oauthLogin('wechat')">微信登录</button>
+                <button style="background:#12b7f5;flex:1;" onclick="oauthLogin('qq')">QQ登录</button>
+            </div>
+        </div>
+
+        <!-- 发帖 -->
+        <div id="postTab" class="card hidden">
+            <h2>发布帖子</h2>
+            <div><label>标题</label><input id="postTitle" placeholder="帖子标题" maxlength="200"></div>
+            <div><label>内容</label><textarea id="postContent" placeholder="写下你的想法..."></textarea></div>
+            <div class="row"><button onclick="createPost()">发布</button><span class="result" id="postResult"></span></div>
+        </div>
+
+        <!-- 帖子列表 -->
+        <div id="listTab" class="card hidden">
+            <h2>帖子列表</h2>
+            <div style="margin-bottom:12px;"><button onclick="loadPosts()">刷新列表</button></div>
+            <div id="postList"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API = '';
+        let currentUser = null;
+
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 2000);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+            const labelMap = { login: '登录', post: '发帖', list: '列表' };
+            document.querySelectorAll('.tab-bar button').forEach(b => {
+                if (b.textContent === labelMap[tab]) b.classList.add('active');
+            });
+            ['login','post','list'].forEach(t => {
+                document.getElementById(t + 'Tab').classList.toggle('hidden', t !== tab);
+            });
+            if (tab === 'list') loadPosts();
+        }
+
+        function setUser(data) {
+            currentUser = data;
+            document.getElementById('displayName').textContent = data.nickname;
+            document.getElementById('displayPhone').textContent = data.phone || '第三方账号';
+            document.getElementById('displayBalance').textContent = '\u4F59\u989D: ' + (data.balance != null ? data.balance.toLocaleString() : '0');
+            document.getElementById('avatarLetter').textContent = data.nickname.charAt(0);
+            document.getElementById('userSection').classList.remove('hidden');
+        }
+
+        async function api(path, body) {
+            const res = await fetch(API + path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || '请求失败');
+            return data;
+        }
+
+        function switchAuthTab(tab) {
+            document.querySelectorAll('#loginTab .tab-bar button').forEach(b => b.classList.remove('active'));
+            document.querySelector('#loginTab .tab-bar button:nth-child(' + (tab === 'login' ? 1 : 2) + ')').classList.add('active');
+            document.getElementById('authLogin').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('authRegister').classList.toggle('hidden', tab !== 'register');
+        }
+
+        async function oauthLogin(provider) {
+            const name = prompt('请输入昵称（或留空使用默认昵称）：');
+            if (name === null) return;
+            try {
+                const openId = provider + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+                const data = await api('/api/auth/oauth', { provider, openId, nickname: name || undefined });
+                setUser(data);
+                toast(provider === 'wechat' ? '微信登录成功' : 'QQ登录成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        async function register() {
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
+            const password2 = document.getElementById('regPassword2').value.trim();
+            if (!phone || !password) { toast('请填写手机号和密码'); return; }
+            if (password !== password2) { toast('两次密码不一致'); return; }
+            try {
+                const data = await api('/api/auth/register', { phone, password });
+                setUser(data);
+                document.getElementById('regResult').textContent = '✅ 注册成功 (ID: ' + data.id + ')';
+                toast('注册成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        async function login() {
+            const phone = document.getElementById('loginPhone').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (!phone || !password) { toast('请填写手机号和密码'); return; }
+            try {
+                const data = await api('/api/auth/login', { phone, password });
+                setUser(data);
+                document.getElementById('loginResult').textContent = '✅ 登录成功 (ID: ' + data.id + ')';
+                toast('登录成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        async function updateNickname() {
+            if (!currentUser) { toast('请先登录'); return; }
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            if (!nickname) { toast('请输入昵称'); return; }
+            try {
+                const res = await fetch(API + '/api/auth/nickname?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname })
+                });
+                console.log('nickname update status:', res.status);
+                const text = await res.text();
+                console.log('nickname update body:', text);
+                const data = JSON.parse(text);
+                if (!res.ok) { toast(data.message || '修改失败 (status:' + res.status + ')'); return; }
+                setUser(data);
+                document.getElementById('nicknameInput').value = '';
+                document.getElementById('nicknameResult').textContent = '✅ 昵称已更新';
+                toast('昵称修改成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('userSection').classList.add('hidden');
+            document.getElementById('loginResult').textContent = '已退出';
+            toast('已退出');
+        }
+
+        async function createPost() {
+            if (!currentUser) { toast('请先登录'); return; }
+            const title = document.getElementById('postTitle').value.trim();
+            const content = document.getElementById('postContent').value.trim();
+            if (!title || !content) { toast('请填写标题和内容'); return; }
+            try {
+                const res = await fetch(API + '/api/posts?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '发帖失败'); return; }
+                document.getElementById('postTitle').value = '';
+                document.getElementById('postContent').value = '';
+                document.getElementById('postResult').textContent = '✅ 发布成功';
+                toast('发布成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        async function loadPosts() {
+            const el = document.getElementById('postList');
+            el.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const url = API + '/api/posts' + (currentUser ? '?userId=' + currentUser.id : '');
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                if (!data.length) { el.innerHTML = '<div class="empty">暂无帖子</div>'; return; }
+                el.innerHTML = data.map((p, i) =>
+                    '<div class="post-item" data-idx="' + i + '">' +
+                    '<div class="post-title">' + esc(p.title) + '</div>' +
+                    '<div class="post-meta">' +
+                    esc(p.author.nickname) + ' · ' +
+                    fmt(p.createdAt) + '</div>' +
+                    '<div class="post-content">' + esc(p.content) + '</div>' +
+                    '<div class="post-actions">' +
+                    '<button class="like-btn' + (p.liked ? ' liked' : '') + '" onclick="likePost(' + p.id + ', this)">👍 ' + (p.likeCount || 0) + '</button>' +
+                    '<button class="comment-btn" onclick="toggleComments(' + p.id + ', this)">💬 评论</button>' +
+                    '</div>' +
+                    '<div class="comment-section hidden" data-post-id="' + p.id + '">' +
+                    '<div class="comment-list"></div>' +
+                    '<div style="margin-top:8px;display:flex;">' +
+                    '<input class="comment-input" placeholder="写评论..." maxlength="200">' +
+                    '<button class="comment-submit" onclick="addComment(' + p.id + ', this)">发送</button>' +
+                    '</div></div>' +
+                    '</div>'
+                ).join('');
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+        
+        async function likePost(postId, btn) {
+            if (!currentUser) { toast('请先登录'); return; }
+            try {
+                const res = await fetch(API + '/api/posts/' + postId + '/like?userId=' + currentUser.id, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '操作失败'); return; }
+                btn.innerHTML = '👍 ' + (data.likeCount || 0);
+                btn.classList.toggle('liked', data.liked);
+            } catch (e) { toast(e.message); }
+        }
+
+        async function toggleComments(postId, btn) {
+            const section = btn.closest('.post-item').querySelector('.comment-section');
+            const isHidden = section.classList.contains('hidden');
+            section.classList.toggle('hidden');
+            if (isHidden && !section.dataset.loaded) {
+                section.querySelector('.comment-list').innerHTML = '<div class="loading">加载中...</div>';
+                try {
+                    const res = await fetch(API + '/api/posts/' + postId + '/comments');
+                    const data = await res.json();
+                    if (!res.ok) { section.querySelector('.comment-list').innerHTML = ''; return; }
+                    section.dataset.loaded = '1';
+                    section.querySelector('.comment-list').innerHTML = data.length
+                        ? data.map(c => '<div class="comment-item">' + esc(c.content) +
+                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div></div>').join('')
+                        : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
+                } catch (e) {
+                    section.querySelector('.comment-list').innerHTML = '<div style="color:#999;">加载失败</div>';
+                }
+            }
+        }
+
+        async function addComment(postId, btn) {
+            if (!currentUser) { toast('请先登录'); return; }
+            const section = btn.closest('.comment-section');
+            const input = section.querySelector('.comment-input');
+            const content = input.value.trim();
+            if (!content) { toast('请输入评论内容'); return; }
+            try {
+                const res = await fetch(API + '/api/posts/' + postId + '/comments?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '评论失败'); return; }
+                input.value = '';
+                section.dataset.loaded = '';
+                const list = section.querySelector('.comment-list');
+                list.innerHTML = '<div class="loading">加载中...</div>';
+                try {
+                    const res2 = await fetch(API + '/api/posts/' + postId + '/comments');
+                    const data2 = await res2.json();
+                    if (!res2.ok) { list.innerHTML = ''; return; }
+                    section.dataset.loaded = '1';
+                    list.innerHTML = data2.length
+                        ? data2.map(c => '<div class="comment-item">' + esc(c.content) +
+                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div></div>').join('')
+                        : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
+                } catch (e) {
+                    list.innerHTML = '<div style="color:#999;">加载失败</div>';
+                }
+                toast('评论成功');
+            } catch (e) { toast(e.message); }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        function fmt(t) { return t ? t.replace('T',' ').substring(0,16) : ''; }
+
+        loadPosts();
+    </script>
+</body>
+</html>
