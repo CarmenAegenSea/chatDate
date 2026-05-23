@@ -18,6 +18,15 @@
         button.danger { background: #ff4d4f; }
         button.danger:hover { background: #ff7875; }
         button.sm { padding: 4px 12px; font-size: 12px; }
+        .mood-options { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .mood-option { padding: 6px 14px; border: 1px solid #d9d9d9; border-radius: 20px; font-size: 13px; cursor: pointer; background: #fff; transition: all .2s; }
+        .mood-option:hover { border-color: #1677ff; background: #f0f5ff; }
+        .mood-option.selected { border-color: #1677ff; background: #e6f4ff; color: #1677ff; }
+        .mood-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 400; margin-left: 6px; vertical-align: middle; background: #f0f5ff; color: #1677ff; }
+        .detail-btn { background: none; border: none; color: #1677ff; font-size: 13px; cursor: pointer; padding: 0; margin-left: 8px; }
+        .detail-btn:hover { color: #4096ff; }
+        .back-btn { background: none; border: 1px solid #d9d9d9; color: #333; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 12px; }
+        .back-btn:hover { background: #f5f5f5; }
         .row { display: flex; gap: 10px; align-items: center; }
         .post-item { border-bottom: 1px solid #f0f0f0; padding: 12px 0; }
         .post-item:last-child { border-bottom: none; }
@@ -123,6 +132,15 @@
         <!-- 发帖 -->
         <div id="postTab" class="card hidden">
             <h2>发布帖子</h2>
+            <div><label>心情（可选）</label></div>
+            <div class="mood-options" id="moodOptions">
+                <span class="mood-option" data-mood="😊开心" onclick="selectMood(this)">😊 开心</span>
+                <span class="mood-option" data-mood="😂搞笑" onclick="selectMood(this)">😂 搞笑</span>
+                <span class="mood-option" data-mood="😢难过" onclick="selectMood(this)">😢 难过</span>
+                <span class="mood-option" data-mood="😡愤怒" onclick="selectMood(this)">😡 愤怒</span>
+                <span class="mood-option" data-mood="🤔思考" onclick="selectMood(this)">🤔 思考</span>
+                <span class="mood-option" data-mood="👍推荐" onclick="selectMood(this)">👍 推荐</span>
+            </div>
             <div><label>标题</label><input id="postTitle" placeholder="帖子标题" maxlength="200"></div>
             <div><label>内容</label><textarea id="postContent" placeholder="写下你的想法..."></textarea></div>
             <div class="row"><button onclick="createPost()">发布</button><span class="result" id="postResult"></span></div>
@@ -134,6 +152,12 @@
             <div style="margin-bottom:12px;"><button onclick="loadPosts()">刷新列表</button></div>
             <div id="postList"></div>
         </div>
+
+        <!-- 帖子详情 -->
+        <div id="detailTab" class="card hidden">
+            <button class="back-btn" onclick="backToList()">← 返回列表</button>
+            <div id="postDetail"></div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -141,6 +165,7 @@
     <script>
         const API = '';
         let currentUser = null;
+        let selectedMood = '';
 
         function toast(msg) {
             const el = document.getElementById('toast');
@@ -149,13 +174,19 @@
             setTimeout(() => el.classList.remove('show'), 2000);
         }
 
+        function selectMood(el) {
+            document.querySelectorAll('#moodOptions .mood-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedMood = el.dataset.mood;
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
             const labelMap = { login: '登录', post: '发帖', list: '列表' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','list'].forEach(t => {
+            ['login','post','list','detail'].forEach(t => {
                 document.getElementById(t + 'Tab').classList.toggle('hidden', t !== tab);
             });
             if (tab === 'list') loadPosts();
@@ -260,15 +291,19 @@
             const content = document.getElementById('postContent').value.trim();
             if (!title || !content) { toast('请填写标题和内容'); return; }
             try {
+                const body = { title, content };
+                if (selectedMood) body.mood = selectedMood;
                 const res = await fetch(API + '/api/posts?userId=' + currentUser.id, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title, content })
+                    body: JSON.stringify(body)
                 });
                 const data = await res.json();
                 if (!res.ok) { toast(data.message || '发帖失败'); return; }
                 document.getElementById('postTitle').value = '';
                 document.getElementById('postContent').value = '';
+                selectedMood = '';
+                document.querySelectorAll('#moodOptions .mood-option').forEach(o => o.classList.remove('selected'));
                 document.getElementById('postResult').textContent = '✅ 发布成功';
                 toast('发布成功');
             } catch (e) { toast(e.message); }
@@ -283,13 +318,17 @@
                 const data = await res.json();
                 if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
                 if (!data.length) { el.innerHTML = '<div class="empty">暂无帖子</div>'; return; }
-                el.innerHTML = data.map((p, i) =>
-                    '<div class="post-item" data-idx="' + i + '">' +
-                    '<div class="post-title">' + esc(p.title) + '</div>' +
+                el.innerHTML = data.map((p, i) => {
+                    const long = p.content.length > 50;
+                    const truncated = long ? esc(p.content.substring(0, 50)) + '...' : esc(p.content);
+                    return '<div class="post-item">' +
+                    '<div class="post-title">' + esc(p.title) + (p.mood ? '<span class="mood-tag">' + esc(p.mood) + '</span>' : '') + '</div>' +
                     '<div class="post-meta">' +
                     esc(p.author.nickname) + ' · ' +
                     fmt(p.createdAt) + '</div>' +
-                    '<div class="post-content">' + esc(p.content) + '</div>' +
+                    '<div class="post-content">' + truncated +
+                    (long ? '<button class="detail-btn" onclick="viewDetail(' + p.id + ')">查看详情</button>' : '') +
+                    '</div>' +
                     '<div class="post-actions">' +
                     '<button class="like-btn' + (p.liked ? ' liked' : '') + '" onclick="likePost(' + p.id + ', this)">👍 ' + (p.likeCount || 0) + '</button>' +
                     '<button class="comment-btn" onclick="toggleComments(' + p.id + ', this)">💬 评论</button>' +
@@ -301,8 +340,8 @@
                     '<input class="comment-input" placeholder="写评论..." maxlength="200">' +
                     '<button class="comment-submit" onclick="addComment(' + p.id + ', this)">发送</button>' +
                     '</div></div>' +
-                    '</div>'
-                ).join('');
+                    '</div>';
+                }).join('');
             } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
         }
         
@@ -340,7 +379,8 @@
 
         async function likeComment(commentId, btn) {
             if (!currentUser) { toast('请先登录'); return; }
-            const postId = btn.closest('.comment-section').dataset.postId;
+            const section = btn.closest('.comment-section');
+            const postId = section ? section.dataset.postId : (window._currentPostId || 0);
             try {
                 const res = await fetch(API + '/api/posts/' + postId + '/comments/' + commentId + '/like?userId=' + currentUser.id, { method: 'POST' });
                 const data = await res.json();
@@ -376,7 +416,7 @@
         async function addComment(postId, btn) {
             if (!currentUser) { toast('请先登录'); return; }
             const section = btn.closest('.comment-section');
-            const input = section.querySelector('.comment-input');
+            const input = section ? section.querySelector('.comment-input') : document.getElementById('detailCommentInput');
             const content = input.value.trim();
             if (!content) { toast('请输入评论内容'); return; }
             try {
@@ -388,31 +428,92 @@
                 const data = await res.json();
                 if (!res.ok) { toast(data.message || '评论失败'); return; }
                 input.value = '';
-                section.dataset.loaded = '';
-                const list = section.querySelector('.comment-list');
-                list.innerHTML = '<div class="loading">加载中...</div>';
-                try {
-                    const url2 = API + '/api/posts/' + postId + '/comments' + (currentUser ? '?userId=' + currentUser.id : '');
-                    const res2 = await fetch(url2);
-                    const data2 = await res2.json();
-                    if (!res2.ok) { list.innerHTML = ''; return; }
-                    section.dataset.loaded = '1';
-                    list.innerHTML = data2.length
-                        ? data2.map(c => '<div class="comment-item">' + esc(c.content) +
-                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div>' +
-                            '<div><button class="like-btn' + (c.liked ? ' liked' : '') + '" onclick="likeComment(' + c.id + ', this)">👍 ' + (c.likeCount || 0) + '</button></div></div>').join('')
-                        : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
-                } catch (e) {
-                    list.innerHTML = '<div style="color:#999;">加载失败</div>';
+                // 刷新评论列表（详情页或列表页）
+                if (section) {
+                    section.dataset.loaded = '';
+                    const list = section.querySelector('.comment-list');
+                    list.innerHTML = '<div class="loading">加载中...</div>';
+                    try {
+                        const url2 = API + '/api/posts/' + postId + '/comments' + (currentUser ? '?userId=' + currentUser.id : '');
+                        const res2 = await fetch(url2);
+                        const data2 = await res2.json();
+                        if (!res2.ok) { list.innerHTML = ''; return; }
+                        section.dataset.loaded = '1';
+                        list.innerHTML = data2.length
+                            ? data2.map(c => '<div class="comment-item">' + esc(c.content) +
+                                '<div class="comment-meta">' + fmt(c.createdAt) + '</div>' +
+                                '<div><button class="like-btn' + (c.liked ? ' liked' : '') + '" onclick="likeComment(' + c.id + ', this)">👍 ' + (c.likeCount || 0) + '</button></div></div>').join('')
+                            : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
+                    } catch (e) { list.innerHTML = '<div style="color:#999;">加载失败</div>'; }
+                } else {
+                    loadDetailComments(postId);
                 }
                 toast('评论成功');
             } catch (e) { toast(e.message); }
         }
 
+        function viewDetail(postId) {
+            window.location.search = '?postId=' + postId;
+        }
+
+        function backToList() {
+            window.location.search = '';
+        }
+
+        async function loadPostDetail(postId) {
+            window._currentPostId = postId;
+            const el = document.getElementById('postDetail');
+            el.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(API + '/api/posts/' + postId + (currentUser ? '?userId=' + currentUser.id : ''));
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">帖子不存在</div>'; return; }
+                el.innerHTML =
+                    '<div class="post-item">' +
+                    '<div class="post-title" style="font-size:20px;">' + esc(data.title) + (data.mood ? '<span class="mood-tag">' + esc(data.mood) + '</span>' : '') + '</div>' +
+                    '<div class="post-meta">' + esc(data.author.nickname) + ' · ' + fmt(data.createdAt) + '</div>' +
+                    '<div class="post-content" style="margin-top:16px;font-size:15px;">' + esc(data.content) + '</div>' +
+                    '<div class="post-actions" style="margin-top:16px;">' +
+                    '<button class="like-btn' + (data.liked ? ' liked' : '') + '" onclick="likePost(' + data.id + ', this)">👍 ' + (data.likeCount || 0) + '</button>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="divider"></div>' +
+                    '<h3 style="margin-bottom:12px;">评论</h3>' +
+                    '<div style="display:flex;margin-bottom:12px;">' +
+                    '<input id="detailCommentInput" class="comment-input" placeholder="写评论..." maxlength="200" style="flex:1;">' +
+                    '<button class="comment-submit" onclick="addComment(' + postId + ', this)">发送</button>' +
+                    '</div>' +
+                    '<div id="detailComments"></div>';
+                loadDetailComments(postId);
+            } catch (e) { el.innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>'; }
+        }
+
+        async function loadDetailComments(postId) {
+            const el = document.getElementById('detailComments');
+            try {
+                const url = API + '/api/posts/' + postId + '/comments' + (currentUser ? '?userId=' + currentUser.id : '');
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = ''; return; }
+                el.innerHTML = data.length
+                    ? data.map(c => '<div class="comment-item">' + esc(c.content) +
+                        '<div class="comment-meta">' + fmt(c.createdAt) + '</div>' +
+                        '<div><button class="like-btn' + (c.liked ? ' liked' : '') + '" onclick="likeComment(' + c.id + ', this)">👍 ' + (c.likeCount || 0) + '</button></div></div>').join('')
+                    : '<div style="color:#ccc;font-size:13px;text-align:center;padding:20px 0;">暂无评论</div>';
+            } catch (e) { el.innerHTML = ''; }
+        }
+
         function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
         function fmt(t) { return t ? t.replace('T',' ').substring(0,16) : ''; }
 
-        loadPosts();
+        const params = new URLSearchParams(window.location.search);
+        const postId = params.get('postId');
+        if (postId) {
+            switchTab('detail');
+            loadPostDetail(postId);
+        } else {
+            loadPosts();
+        }
     </script>
 </body>
 </html>

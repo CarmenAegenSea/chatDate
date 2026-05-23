@@ -31,6 +31,9 @@ public class Post {
 
     private LocalDateTime updatedAt; // 更新时间
 
+    @Column(length = 20)
+    private String mood; // 心情 / 标签
+
     @Column(name = "`like`")
     private Integer likeCount = 0;   // 点赞数
 
@@ -71,6 +74,8 @@ public class Post {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getMood() { return mood; }
+    public void setMood(String mood) { this.mood = mood; }
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public List<Comment> getComments() { return comments; }

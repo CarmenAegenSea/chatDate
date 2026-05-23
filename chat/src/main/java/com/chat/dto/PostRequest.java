@@ -13,8 +13,12 @@ public class PostRequest {
     @NotBlank(message = "内容不能为空")
     private String content;
 
+    private String mood; // 心情 / 标签（可选）
+
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public String getMood() { return mood; }
+    public void setMood(String mood) { this.mood = mood; }
 }

@@ -11,6 +11,7 @@ public class PostResponse {
     private String content;
     private UserResponse author;
     private LocalDateTime createdAt;
+    private String mood;         // 心情 / 标签
     private Integer likeCount;  // 点赞数
     private Boolean liked;       // 当前登录用户是否已赞
 
@@ -22,6 +23,7 @@ public class PostResponse {
         resp.setContent(post.getContent());
         resp.setAuthor(UserResponse.from(post.getAuthor()));
         resp.setCreatedAt(post.getCreatedAt());
+        resp.setMood(post.getMood());
         resp.setLikeCount(post.getLikeCount());
         resp.setLiked(false);
         return resp;
@@ -44,6 +46,8 @@ public class PostResponse {
     public void setAuthor(UserResponse author) { this.author = author; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getMood() { return mood; }
+    public void setMood(String mood) { this.mood = mood; }
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public Boolean getLiked() { return liked; }

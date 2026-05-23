@@ -39,6 +39,7 @@ public class PostService {
         Post post = new Post();
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
+        post.setMood(request.getMood());
         post.setAuthor(user);
         return PostResponse.from(postRepository.save(post));
     }
