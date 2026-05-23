@@ -13,7 +13,7 @@ public class User {
     private Long id;
 
     @Column(unique = true, length = 20)
-    private String phone; // 手机号，登录凭据，唯一（可为空，第三方登录用户无手机号）
+    private String phone; // 手机号（第三方登录用户无手机号）
 
     @Column(nullable = false, length = 32)
     private String nickname; // 昵称
@@ -22,7 +22,7 @@ public class User {
     private String avatar; // 头像 URL
 
     @Column(length = 128)
-    private String password; // BCrypt 加密后的密码（可为空，第三方登录用户无密码）
+    private String password; // BCrypt 加密后的密码（第三方登录用户无密码）
 
     private Long balance = 0L; // 余额
 

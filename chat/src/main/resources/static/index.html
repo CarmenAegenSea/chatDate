@@ -293,6 +293,7 @@
                     '<div class="post-actions">' +
                     '<button class="like-btn' + (p.liked ? ' liked' : '') + '" onclick="likePost(' + p.id + ', this)">👍 ' + (p.likeCount || 0) + '</button>' +
                     '<button class="comment-btn" onclick="toggleComments(' + p.id + ', this)">💬 评论</button>' +
+                    (currentUser && p.author.id === currentUser.id ? '<button class="danger sm" onclick="deletePost(' + p.id + ', this)" style="margin-left:auto;">删除</button>' : '') +
                     '</div>' +
                     '<div class="comment-section hidden" data-post-id="' + p.id + '">' +
                     '<div class="comment-list"></div>' +
@@ -316,6 +317,39 @@
             } catch (e) { toast(e.message); }
         }
 
+        async function deletePost(postId, btn) {
+            if (!currentUser) { toast('请先登录'); return; }
+            if (!confirm('确定要删除这条帖子吗？')) return;
+            try {
+                const res = await fetch(API + '/api/posts/' + postId + '?userId=' + currentUser.id, { method: 'DELETE' });
+                if (!res.ok) {
+                    const text = await res.text();
+                    let msg = '删除失败';
+                    try { msg = JSON.parse(text).message || msg; } catch(e) {}
+                    toast(msg);
+                    return;
+                }
+                toast('删除成功');
+                btn.closest('.post-item').remove();
+                const list = document.getElementById('postList');
+                if (!list.querySelector('.post-item')) {
+                    list.innerHTML = '<div class="empty">暂无帖子</div>';
+                }
+            } catch (e) { toast(e.message); }
+        }
+
+        async function likeComment(commentId, btn) {
+            if (!currentUser) { toast('请先登录'); return; }
+            const postId = btn.closest('.comment-section').dataset.postId;
+            try {
+                const res = await fetch(API + '/api/posts/' + postId + '/comments/' + commentId + '/like?userId=' + currentUser.id, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '操作失败'); return; }
+                btn.innerHTML = '👍 ' + (data.likeCount || 0);
+                btn.classList.toggle('liked', data.liked);
+            } catch (e) { toast(e.message); }
+        }
+
         async function toggleComments(postId, btn) {
             const section = btn.closest('.post-item').querySelector('.comment-section');
             const isHidden = section.classList.contains('hidden');
@@ -323,13 +357,15 @@
             if (isHidden && !section.dataset.loaded) {
                 section.querySelector('.comment-list').innerHTML = '<div class="loading">加载中...</div>';
                 try {
-                    const res = await fetch(API + '/api/posts/' + postId + '/comments');
+                    const url = API + '/api/posts/' + postId + '/comments' + (currentUser ? '?userId=' + currentUser.id : '');
+                    const res = await fetch(url);
                     const data = await res.json();
                     if (!res.ok) { section.querySelector('.comment-list').innerHTML = ''; return; }
                     section.dataset.loaded = '1';
                     section.querySelector('.comment-list').innerHTML = data.length
                         ? data.map(c => '<div class="comment-item">' + esc(c.content) +
-                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div></div>').join('')
+                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div>' +
+                            '<div><button class="like-btn' + (c.liked ? ' liked' : '') + '" onclick="likeComment(' + c.id + ', this)">👍 ' + (c.likeCount || 0) + '</button></div></div>').join('')
                         : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
                 } catch (e) {
                     section.querySelector('.comment-list').innerHTML = '<div style="color:#999;">加载失败</div>';
@@ -356,13 +392,15 @@
                 const list = section.querySelector('.comment-list');
                 list.innerHTML = '<div class="loading">加载中...</div>';
                 try {
-                    const res2 = await fetch(API + '/api/posts/' + postId + '/comments');
+                    const url2 = API + '/api/posts/' + postId + '/comments' + (currentUser ? '?userId=' + currentUser.id : '');
+                    const res2 = await fetch(url2);
                     const data2 = await res2.json();
                     if (!res2.ok) { list.innerHTML = ''; return; }
                     section.dataset.loaded = '1';
                     list.innerHTML = data2.length
                         ? data2.map(c => '<div class="comment-item">' + esc(c.content) +
-                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div></div>').join('')
+                            '<div class="comment-meta">' + fmt(c.createdAt) + '</div>' +
+                            '<div><button class="like-btn' + (c.liked ? ' liked' : '') + '" onclick="likeComment(' + c.id + ', this)">👍 ' + (c.likeCount || 0) + '</button></div></div>').join('')
                         : '<div style="color:#ccc;font-size:13px;text-align:center;padding:8px 0;">暂无评论</div>';
                 } catch (e) {
                     list.innerHTML = '<div style="color:#999;">加载失败</div>';
