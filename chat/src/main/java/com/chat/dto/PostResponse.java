@@ -11,11 +11,13 @@ public class PostResponse {
     private String content;
     private UserResponse author;
     private LocalDateTime createdAt;
-    private String mood;         // 心情 / 标签
-    private Integer likeCount;  // 点赞数
-    private Boolean liked;       // 当前登录用户是否已赞
+    private String mood;
+    private Integer likeCount;
+    private Boolean liked;
+    private Integer bookmarkCount;
+    private Boolean bookmarked;
+    private Integer commentCount;
 
-    // 将 Post 实体转换为响应 DTO（默认未点赞）
     public static PostResponse from(Post post) {
         PostResponse resp = new PostResponse();
         resp.setId(post.getId());
@@ -25,14 +27,17 @@ public class PostResponse {
         resp.setCreatedAt(post.getCreatedAt());
         resp.setMood(post.getMood());
         resp.setLikeCount(post.getLikeCount());
+        resp.setBookmarkCount(post.getBookmarkCount());
+        resp.setCommentCount(post.getCommentCount());
         resp.setLiked(false);
+        resp.setBookmarked(false);
         return resp;
     }
 
-    // 将 Post 实体转换为响应 DTO，指定点赞状态
-    public static PostResponse from(Post post, boolean liked) {
+    public static PostResponse from(Post post, boolean liked, boolean bookmarked) {
         PostResponse resp = from(post);
         resp.setLiked(liked);
+        resp.setBookmarked(bookmarked);
         return resp;
     }
 
@@ -52,4 +57,10 @@ public class PostResponse {
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public Boolean getLiked() { return liked; }
     public void setLiked(Boolean liked) { this.liked = liked; }
+    public Integer getBookmarkCount() { return bookmarkCount; }
+    public void setBookmarkCount(Integer bookmarkCount) { this.bookmarkCount = bookmarkCount; }
+    public Boolean getBookmarked() { return bookmarked; }
+    public void setBookmarked(Boolean bookmarked) { this.bookmarked = bookmarked; }
+    public Integer getCommentCount() { return commentCount; }
+    public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
 }

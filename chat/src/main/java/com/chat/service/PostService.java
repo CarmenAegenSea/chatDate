@@ -57,7 +57,9 @@ public class PostService {
                 .map(post -> {
                     boolean liked = currentUserId != null
                             && post.getLikedByUsers().stream().anyMatch(u -> u.getId().equals(currentUserId));
-                    return PostResponse.from(post, liked);
+                    boolean bookmarked = currentUserId != null
+                            && post.getBookmarkedByUsers().stream().anyMatch(u -> u.getId().equals(currentUserId));
+                    return PostResponse.from(post, liked, bookmarked);
                 })
                 .toList();
     }
@@ -74,7 +76,9 @@ public class PostService {
                 .orElseThrow(() -> new EntityNotFoundException("帖子不存在"));
         boolean liked = currentUserId != null
                 && post.getLikedByUsers().stream().anyMatch(u -> u.getId().equals(currentUserId));
-        return PostResponse.from(post, liked);
+        boolean bookmarked = currentUserId != null
+                && post.getBookmarkedByUsers().stream().anyMatch(u -> u.getId().equals(currentUserId));
+        return PostResponse.from(post, liked, bookmarked);
     }
 
     // 点赞/取消点赞，重复点击切换状态
@@ -87,15 +91,40 @@ public class PostService {
 
         boolean alreadyLiked = post.getLikedByUsers().stream()
                 .anyMatch(u -> u.getId().equals(userId));
+        boolean bookmarked = post.getBookmarkedByUsers().stream()
+                .anyMatch(u -> u.getId().equals(userId));
         if (alreadyLiked) {
             post.getLikedByUsers().remove(user);
             post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
-            return PostResponse.from(postRepository.save(post), false);
+            return PostResponse.from(postRepository.save(post), false, bookmarked);
         }
 
         post.getLikedByUsers().add(user);
         post.setLikeCount(post.getLikeCount() == null ? 1 : post.getLikeCount() + 1);
-        return PostResponse.from(postRepository.save(post), true);
+        return PostResponse.from(postRepository.save(post), true, bookmarked);
+    }
+
+    // 收藏/取消收藏，切换状态
+    @Transactional
+    public PostResponse bookmark(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("帖子不存在"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
+
+        boolean alreadyBookmarked = post.getBookmarkedByUsers().stream()
+                .anyMatch(u -> u.getId().equals(userId));
+        boolean liked = post.getLikedByUsers().stream()
+                .anyMatch(u -> u.getId().equals(userId));
+        if (alreadyBookmarked) {
+            post.getBookmarkedByUsers().remove(user);
+            post.setBookmarkCount(Math.max(0, post.getBookmarkCount() - 1));
+            return PostResponse.from(postRepository.save(post), liked, false);
+        }
+
+        post.getBookmarkedByUsers().add(user);
+        post.setBookmarkCount(post.getBookmarkCount() == null ? 1 : post.getBookmarkCount() + 1);
+        return PostResponse.from(postRepository.save(post), liked, true);
     }
 
     // 获取帖子评论列表，可选传当前用户 ID 获取点赞状态
@@ -121,7 +150,10 @@ public class PostService {
         comment.setPost(post);
         comment.setAuthor(user);
         comment.setContent(request.getContent());
-        return CommentResponse.from(commentRepository.save(comment));
+        Comment saved = commentRepository.save(comment);
+        post.setCommentCount(post.getCommentCount() == null ? 1 : post.getCommentCount() + 1);
+        postRepository.save(post);
+        return CommentResponse.from(saved);
     }
 
     // 点赞/取消点赞评论，切换状态
@@ -170,5 +202,7 @@ public class PostService {
             throw new RuntimeException("无权删除该评论");
         }
         commentRepository.delete(comment);
+        post.setCommentCount(Math.max(0, post.getCommentCount() - 1));
+        postRepository.save(post);
     }
 }

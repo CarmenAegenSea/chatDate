@@ -9,8 +9,9 @@ public class CommentResponse {
     private Long id;
     private String content;
     private LocalDateTime createdAt;
-    private Integer likeCount;   // 点赞数
-    private Boolean liked;        // 当前用户是否已赞
+    private Integer likeCount;
+    private Boolean liked;
+    private Long authorId;
 
     public static CommentResponse from(Comment comment) {
         CommentResponse resp = new CommentResponse();
@@ -19,6 +20,7 @@ public class CommentResponse {
         resp.setCreatedAt(comment.getCreatedAt());
         resp.setLikeCount(comment.getLikeCount());
         resp.setLiked(false);
+        resp.setAuthorId(comment.getAuthor().getId());
         return resp;
     }
 
@@ -38,4 +40,6 @@ public class CommentResponse {
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public Boolean getLiked() { return liked; }
     public void setLiked(Boolean liked) { this.liked = liked; }
+    public Long getAuthorId() { return authorId; }
+    public void setAuthorId(Long authorId) { this.authorId = authorId; }
 }

@@ -35,18 +35,27 @@ public class Post {
     private String mood; // 心情 / 标签
 
     @Column(name = "`like`")
-    private Integer likeCount = 0;   // 点赞数
+    private Integer likeCount = 0;
+
+    private Integer bookmarkCount = 0;
+
+    private Integer commentCount = 0;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("createdAt ASC")
     private List<Comment> comments = new ArrayList<>();
 
-    // 点赞用户集合，通过 post_likes 关联表映射
     @ManyToMany
     @JoinTable(name = "post_likes",
         joinColumns = @JoinColumn(name = "post_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> likedByUsers = new HashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "post_bookmarks",
+        joinColumns = @JoinColumn(name = "post_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> bookmarkedByUsers = new HashSet<>();
 
     // 插入前自动设置时间
     @PrePersist
@@ -78,8 +87,14 @@ public class Post {
     public void setMood(String mood) { this.mood = mood; }
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+    public Integer getBookmarkCount() { return bookmarkCount; }
+    public void setBookmarkCount(Integer bookmarkCount) { this.bookmarkCount = bookmarkCount; }
+    public Integer getCommentCount() { return commentCount; }
+    public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
     public List<Comment> getComments() { return comments; }
     public void setComments(List<Comment> comments) { this.comments = comments; }
     public Set<User> getLikedByUsers() { return likedByUsers; }
     public void setLikedByUsers(Set<User> likedByUsers) { this.likedByUsers = likedByUsers; }
+    public Set<User> getBookmarkedByUsers() { return bookmarkedByUsers; }
+    public void setBookmarkedByUsers(Set<User> bookmarkedByUsers) { this.bookmarkedByUsers = bookmarkedByUsers; }
 }

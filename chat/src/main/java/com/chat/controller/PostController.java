@@ -76,6 +76,13 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
+    // 收藏/取消收藏帖子
+    @PostMapping("/{id}/bookmark")
+    public ResponseEntity<PostResponse> bookmark(@PathVariable Long id,
+                                                  @RequestParam Long userId) {
+        return ResponseEntity.ok(postService.bookmark(id, userId));
+    }
+
     // 点赞/取消点赞评论
     @PostMapping("/{id}/comments/{commentId}/like")
     public ResponseEntity<CommentResponse> likeComment(@PathVariable Long id,
