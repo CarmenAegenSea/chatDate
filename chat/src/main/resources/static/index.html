@@ -84,6 +84,21 @@
         .comment-dropdown { position: absolute; right: 0; top: calc(100% + 2px); background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; min-width: 70px; padding: 4px; }
         .comment-dropdown button { display: block; width: 100%; padding: 4px 10px; text-align: left; background: none; color: #ff4d4f; font-size: 12px; border-radius: 4px; }
         .comment-dropdown button:hover { background: #fff2f0; }
+        /* 游戏陪玩 */
+        .game-setup-banner { background: #fffbe6; border: 1px solid #ffe58f; border-radius: 6px; padding: 10px 16px; margin-bottom: 16px; color: #ad8b00; font-size: 14px; }
+        .game-checkbox { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; margin: 3px; border: 1px solid #d9d9d9; border-radius: 6px; cursor: pointer; transition: all .15s; user-select: none; font-size: 14px; background: #fff; }
+        .game-checkbox:hover { border-color: #1677ff; background: #f0f5ff; }
+        .game-checkbox.selected { border-color: #1677ff; background: #e6f4ff; color: #1677ff; font-weight: 600; }
+        .game-checkbox input { display: none; }
+        .skill-select { margin-left: 4px; font-size: 12px; padding: 2px 6px; border: 1px solid #d9d9d9; border-radius: 4px; }
+        .save-games-btn { margin-top: 16px; padding: 8px 28px; background: #52c41a; color: #fff; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+        .save-games-btn:hover { background: #73d13d; }
+        .game-dashboard { display: grid; gap: 12px; }
+        .game-dashboard .info-row { display: flex; gap: 12px; align-items: center; font-size: 14px; }
+        .game-dashboard .info-row .label { font-weight: 600; color: #888; min-width: 70px; }
+        .game-dashboard .game-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .game-dashboard .game-tag { background: #f0f5ff; color: #1677ff; padding: 3px 10px; border-radius: 10px; font-size: 13px; }
+        .new-badge { font-size: 11px; background: #ff4d4f; color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -116,6 +131,7 @@
             <button class="active" onclick="switchTab('login')">登录</button>
             <button onclick="switchTab('post')">发帖</button>
             <button onclick="switchTab('list')">列表</button>
+            <button onclick="switchTab('game-companion')">游戏陪玩<span class="new-badge">新</span></button>
         </div>
 
         <!-- 登录/注册 -->
@@ -179,6 +195,14 @@
             <button class="back-btn" onclick="backToList()">← 返回列表</button>
             <div id="postDetail"></div>
         </div>
+
+        <!-- 游戏陪玩 -->
+        <div id="gameCompanionTab" class="card hidden">
+            <h2>游戏陪玩</h2>
+            <div id="gameCompanionContent">
+                <div class="loading">点击「游戏陪玩」加载模块...</div>
+            </div>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -187,6 +211,7 @@
         const API = '';
         let currentUser = null;
         let selectedMood = '';
+        let gameCompanionLoaded = false;
 
         function iconLike(filled) {
             return '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 4L3 20h18z" fill="' + (filled ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
@@ -213,14 +238,16 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', list: '列表' };
+            const labelMap = { login: '登录', post: '发帖', list: '列表', 'game-companion': '游戏陪玩' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
-                if (b.textContent === labelMap[tab]) b.classList.add('active');
+                if (b.textContent.trim() === labelMap[tab] || b.textContent.includes('游戏陪玩')) b.classList.add('active');
             });
-            ['login','post','list','detail'].forEach(t => {
-                document.getElementById(t + 'Tab').classList.toggle('hidden', t !== tab);
+            ['login','post','list','detail','gameCompanion'].forEach(t => {
+                var targetTab = t === 'gameCompanion' ? 'game-companion' : t;
+                document.getElementById(t + 'Tab').classList.toggle('hidden', targetTab !== tab);
             });
             if (tab === 'list') loadPosts();
+            if (tab === 'game-companion') loadGameCompanion();
         }
 
         function setUser(data) {
@@ -241,6 +268,28 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || '请求失败');
             return data;
+        }
+
+        // 通用 GET 请求
+        async function apiGet(path) {
+            const res = await fetch(API + path);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || '请求失败');
+            return data;
+        }
+
+        // 通用 PUT 请求
+        async function apiPut(path, body) {
+            const res = await fetch(API + path, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ message: res.statusText }));
+                throw new Error(err.message || '请求失败');
+            }
+            return res.status === 204 ? null : res.json();
         }
 
         function switchAuthTab(tab) {
@@ -488,7 +537,6 @@
                 const data = await res.json();
                 if (!res.ok) { toast(data.message || '评论失败'); return; }
                 input.value = '';
-                // 刷新评论列表（详情页或列表页）
                 if (section) {
                     section.dataset.loaded = '';
                     const list = section.querySelector('.comment-list');
@@ -592,6 +640,25 @@
                 (canDelete ?
                   '<span class="comment-menu-wrap"><button class="comment-menu-btn" onclick="event.stopPropagation();toggleCommentMenu(this)">···</button><div class="comment-dropdown hidden"><button onclick="deleteComment(' + c.id + ', ' + postId + ', this)">🗑 删除</button></div></span>' : '') +
                 '</div></div>';
+        }
+
+        // --- 游戏陪玩（懒加载：点击选项卡后 fetch JS 代码再执行）---
+        async function loadGameCompanion() {
+            if (!currentUser) { toast('请先登录'); return; }
+            const content = document.getElementById('gameCompanionContent');
+            if (gameCompanionLoaded) return;
+            content.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch('/js/game-companion.js');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const code = await res.text();
+                (new Function('currentUser', 'container', 'toast', 'apiGet', 'apiPut', code))(
+                    currentUser, content, toast, apiGet, apiPut
+                );
+                gameCompanionLoaded = true;
+            } catch (e) {
+                content.innerHTML = '<div class="empty">模块加载失败: ' + e.message + '</div>';
+            }
         }
 
         loadPosts();
