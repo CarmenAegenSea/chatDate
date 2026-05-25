@@ -84,6 +84,37 @@
         .comment-dropdown { position: absolute; right: 0; top: calc(100% + 2px); background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; min-width: 70px; padding: 4px; }
         .comment-dropdown button { display: block; width: 100%; padding: 4px 10px; text-align: left; background: none; color: #ff4d4f; font-size: 12px; border-radius: 4px; }
         .comment-dropdown button:hover { background: #fff2f0; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.hidden { display: none; }
+        .modal-content { background: #fff; border-radius: 12px; padding: 24px; max-width: 420px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+        .modal-content h3 { font-size: 18px; margin-bottom: 16px; }
+        .game-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e8e8e8; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all .2s; }
+        .game-option:hover { border-color: #1677ff; background: #f0f5ff; }
+        .game-option.selected { border-color: #1677ff; background: #e6f4ff; }
+        .game-option .check { width: 20px; height: 20px; border: 2px solid #d9d9d9; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; flex-shrink: 0; }
+        .game-option.selected .check { background: #1677ff; border-color: #1677ff; }
+        .game-option .gicon { font-size: 24px; }
+        .game-option .gname { font-size: 15px; font-weight: 500; }
+
+        .game-card { display: flex; align-items: center; padding: 16px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 12px; transition: all .2s; cursor: pointer; }
+        .game-card:hover { border-color: #1677ff; box-shadow: 0 2px 8px rgba(22,119,255,.08); }
+        .game-card .gicon { font-size: 36px; margin-right: 16px; }
+        .game-card .ginfo { flex: 1; }
+        .game-card .gname { font-size: 17px; font-weight: 600; }
+        .game-card .gcount { font-size: 13px; color: #999; margin-top: 2px; }
+        .game-card .gcount strong { color: #1677ff; font-size: 18px; }
+        .game-card .gbtn { padding: 6px 18px; font-size: 13px; }
+
+        .companion-card { display: flex; align-items: center; padding: 12px; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px; }
+        .companion-card .cavatar { width: 36px; height: 36px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+        .companion-card .cinfo { flex: 1; }
+        .companion-card .cname { font-size: 14px; font-weight: 600; }
+        .companion-card .cbio { font-size: 12px; color: #999; margin-top: 2px; }
+        .companion-card .cbtn { padding: 4px 14px; font-size: 12px; }
+
+        .chart-wrap { background: #fafafa; border-radius: 8px; padding: 16px; margin: 12px 0; }
+        .chart-wrap canvas { width: 100%; height: 200px; display: block; }
     </style>
 </head>
 <body>
@@ -116,6 +147,7 @@
             <button class="active" onclick="switchTab('login')">登录</button>
             <button onclick="switchTab('post')">发帖</button>
             <button onclick="switchTab('list')">列表</button>
+            <button onclick="switchTab('game')">游戏</button>
         </div>
 
         <!-- 登录/注册 -->
@@ -179,6 +211,34 @@
             <button class="back-btn" onclick="backToList()">← 返回列表</button>
             <div id="postDetail"></div>
         </div>
+
+        <!-- 游戏陪玩 -->
+        <div id="gameTab" class="hidden">
+            <div id="gameLobbyView">
+                <h2 style="margin-bottom:12px;">联机大厅</h2>
+                <div id="gameLobbyContent"><div class="empty">点击右上角"游戏"按钮进入</div></div>
+            </div>
+            <div id="gameDetailView" class="hidden">
+                <button class="back-btn" onclick="backToGameLobby()">← 返回大厅</button>
+                <div id="gameDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏设置弹窗 -->
+    <div id="gameSetupModal" class="modal-overlay hidden" onclick="if(event.target===this)closeGameSetup()">
+        <div class="modal-content">
+            <h3>🎮 选择你喜欢的游戏</h3>
+            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择至少一个游戏，即可进入联机大厅</p>
+            <div id="gameSelectionList"></div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+                    <input type="checkbox" id="isCompanionCheck" onchange="toggleBioInput()"> 我愿意成为陪玩（可接单）
+                </label>
+                <input id="companionBio" class="hidden" style="margin-top:8px;" placeholder="介绍自己，如：王者荣耀最强王者段位" maxlength="200">
+            </div>
+            <button onclick="saveGameSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
+        </div>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -213,14 +273,16 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', list: '列表' };
+            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','list','detail'].forEach(t => {
-                document.getElementById(t + 'Tab').classList.toggle('hidden', t !== tab);
+            ['login','post','list','detail','game'].forEach(t => {
+                const el = document.getElementById(t + 'Tab');
+                if (el) el.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'list') loadPosts();
+            if (tab === 'game') loadGameModule();
         }
 
         function setUser(data) {
@@ -592,6 +654,242 @@
                 (canDelete ?
                   '<span class="comment-menu-wrap"><button class="comment-menu-btn" onclick="event.stopPropagation();toggleCommentMenu(this)">···</button><div class="comment-dropdown hidden"><button onclick="deleteComment(' + c.id + ', ' + postId + ', this)">🗑 删除</button></div></span>' : '') +
                 '</div></div>';
+        }
+
+        /* ===== 游戏陪玩模块 ===== */
+        let allGames = [];
+        let selectedGameIds = new Set();
+        let currentGameId = null;
+
+        const FALLBACK_GAMES = [
+            { id: 1, name: '王者荣耀', icon: '🎮' },
+            { id: 2, name: '和平精英', icon: '🔫' },
+            { id: 3, name: '原神', icon: '✨' },
+            { id: 4, name: '英雄联盟', icon: '⚔️' },
+            { id: 5, name: '绝地求生', icon: '🪂' },
+            { id: 6, name: '永劫无间', icon: '🗡️' }
+        ];
+
+        function toggleBioInput() {
+            document.getElementById('companionBio').classList.toggle('hidden', !document.getElementById('isCompanionCheck').checked);
+        }
+
+        async function loadGameModule() {
+            if (!currentUser) { toast('请先登录才能使用游戏功能'); return; }
+            document.getElementById('gameDetailView').classList.add('hidden');
+            document.getElementById('gameLobbyView').classList.remove('hidden');
+
+            try {
+                const res = await fetch(API + '/api/game/games');
+                if (res.ok) allGames = await res.json();
+            } catch(e) {}
+
+            try {
+                const check = await fetch(API + '/api/game/player/check?userId=' + currentUser.id);
+                const checkData = await check.json();
+                if (checkData.hasProfile) {
+                    await loadGameLobby();
+                } else {
+                    const el = document.getElementById('gameLobbyContent');
+                    el.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
+                        '<div style="font-size:48px;margin-bottom:16px;">🎮</div>' +
+                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎来到游戏大厅</div>' +
+                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你喜欢的游戏，即可查看各游戏在线人数</div>' +
+                        '<button onclick="showGameSetup()" style="padding:10px 32px;font-size:15px;">进入游戏大厅 →</button>' +
+                        '</div>';
+                }
+            } catch (e) { toast('加载游戏模块失败: ' + e.message); }
+        }
+
+        async function showGameSetup() {
+            if (!allGames.length) allGames = FALLBACK_GAMES;
+            selectedGameIds.clear();
+            document.getElementById('isCompanionCheck').checked = false;
+            document.getElementById('companionBio').value = '';
+            document.getElementById('companionBio').classList.add('hidden');
+
+            const list = document.getElementById('gameSelectionList');
+            list.innerHTML = allGames.map(g =>
+                '<div class="game-option" data-id="' + g.id + '" onclick="toggleGameSelect(this)">' +
+                '<div class="check">✓</div>' +
+                '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
+                '<span class="gname">' + esc(g.name) + '</span></div>'
+            ).join('');
+
+            document.getElementById('gameSetupModal').classList.remove('hidden');
+        }
+
+        function toggleGameSelect(el) {
+            el.classList.toggle('selected');
+            const id = parseInt(el.dataset.id);
+            if (selectedGameIds.has(id)) selectedGameIds.delete(id);
+            else selectedGameIds.add(id);
+        }
+
+        function closeGameSetup() {
+            document.getElementById('gameSetupModal').classList.add('hidden');
+            selectedGameIds.clear();
+        }
+
+        async function saveGameSetup() {
+            if (selectedGameIds.size === 0) { toast('请至少选择一个游戏'); return; }
+            try {
+                const body = {
+                    favoriteGameIds: Array.from(selectedGameIds),
+                    isCompanion: document.getElementById('isCompanionCheck').checked,
+                    bio: document.getElementById('companionBio').value.trim()
+                };
+                const res = await fetch(API + '/api/game/player/setup?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '设置失败'); return; }
+                document.getElementById('gameSetupModal').classList.add('hidden');
+                toast('设置成功！');
+                selectedGameIds.clear();
+                await loadGameLobby();
+            } catch (e) { toast(e.message); }
+        }
+
+        async function loadGameLobby() {
+            document.getElementById('gameDetailView').classList.add('hidden');
+            document.getElementById('gameLobbyView').classList.remove('hidden');
+            const el = document.getElementById('gameLobbyContent');
+            el.innerHTML = '<div class="loading">加载大厅...</div>';
+
+            try {
+                const res = await fetch(API + '/api/game/lobby');
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                if (!data.length) { el.innerHTML = '<div class="empty">暂无游戏</div>'; return; }
+
+                el.innerHTML = data.map(g => '<div class="game-card" onclick="enterGame(' + g.id + ')">' +
+                    '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
+                    '<div class="ginfo">' +
+                    '<div class="gname">' + esc(g.name) + '</div>' +
+                    '<div class="gcount">🟢 在线 <strong>' + g.currentPlayers + '</strong> 人</div>' +
+                    '</div>' +
+                    '<button class="gbtn" onclick="event.stopPropagation();enterGame(' + g.id + ')">查看详情</button>' +
+                    '</div>').join('');
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        async function enterGame(gameId) {
+            currentGameId = gameId;
+            document.getElementById('gameLobbyView').classList.add('hidden');
+            document.getElementById('gameDetailView').classList.remove('hidden');
+            const el = document.getElementById('gameDetailContent');
+            el.innerHTML = '<div class="loading">加载详情...</div>';
+
+            try {
+                const res = await fetch(API + '/api/game/' + gameId + '/detail');
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+
+                let html = '<div class="card" style="padding:16px;margin-bottom:12px;">' +
+                    '<div style="font-size:24px;margin-bottom:8px;">' + (data.game.icon || '🎮') + '</div>' +
+                    '<h2 style="font-size:20px;">' + esc(data.game.name) + '</h2>' +
+                    '<div style="font-size:14px;color:#999;margin-top:4px;">当前在线: <strong style="color:#1677ff;font-size:20px;">' + data.game.currentPlayers + '</strong> 人</div>' +
+                    '</div>' +
+                    '<h3 style="margin-bottom:8px;font-size:15px;">📈 过去一小时在线人数</h3>' +
+                    '<div class="chart-wrap"><canvas id="gameChart" height="200"></canvas></div>';
+
+                if (data.companions && data.companions.length > 0) {
+                    html += '<h3 style="margin:16px 0 8px;font-size:15px;">🎯 可接单的陪玩 (' + data.companions.length + ')</h3>';
+                    html += data.companions.map(c =>
+                        '<div class="companion-card">' +
+                        '<div class="cavatar">' + esc((c.nickname || '?').charAt(0)) + '</div>' +
+                        '<div class="cinfo">' +
+                        '<div class="cname">' + esc(c.nickname) + '</div>' +
+                        '<div class="cbio">' + esc(c.bio || '暂无简介') + '</div>' +
+                        '</div>' +
+                        '<button class="cbtn" onclick="toast(\'功能开发中，敬请期待\')">联系</button>' +
+                        '</div>'
+                    ).join('');
+                } else {
+                    html += '<div style="text-align:center;padding:20px;color:#ccc;font-size:14px;">暂无陪玩在线</div>';
+                }
+
+                el.innerHTML = html;
+                drawChart(data.records || []);
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        function backToGameLobby() {
+            currentGameId = null;
+            loadGameLobby();
+        }
+
+        function drawChart(records) {
+            const canvas = document.getElementById('gameChart');
+            if (!canvas || !records.length) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width, H = rect.height;
+            const pad = { top: 20, right: 16, bottom: 28, left: 40 };
+            const cw = W - pad.left - pad.right;
+            const ch = H - pad.top - pad.bottom;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const values = records.map(r => r.playerCount);
+            const times = records.map(r => (r.recordedAt || '').substring(11, 16));
+            const max = Math.max(...values, 1);
+            const min = Math.min(...values, 0);
+            const range = max - min || 1;
+
+            const xs = records.map((_, i) => pad.left + (i / (records.length - 1 || 1)) * cw);
+            const ys = values.map(v => pad.top + ch - ((v - min) / range) * ch);
+
+            // grid lines
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = pad.top + (i / 4) * ch;
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+                const val = Math.round(max - (i / 4) * range);
+                ctx.fillStyle = '#999'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+                ctx.fillText(val, pad.left - 6, y + 4);
+            }
+
+            // line
+            ctx.strokeStyle = '#1677ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            xs.forEach((x, i) => i === 0 ? ctx.moveTo(x, ys[i]) : ctx.lineTo(x, ys[i]));
+            ctx.stroke();
+
+            // gradient fill
+            const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+            grad.addColorStop(0, 'rgba(22,119,255,.15)');
+            grad.addColorStop(1, 'rgba(22,119,255,.01)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(xs[0], pad.top + ch);
+            xs.forEach((x, i) => ctx.lineTo(x, ys[i]));
+            ctx.lineTo(xs[xs.length - 1], pad.top + ch);
+            ctx.closePath();
+            ctx.fill();
+
+            // dots
+            xs.forEach((x, i) => {
+                ctx.beginPath(); ctx.arc(x, ys[i], 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#1677ff'; ctx.fill();
+            });
+
+            // x labels (show first, middle, last)
+            ctx.fillStyle = '#999';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            [0, Math.floor(times.length / 2), times.length - 1].forEach(i => {
+                if (i < times.length) ctx.fillText(times[i], xs[i], pad.top + ch + 16);
+            });
         }
 
         loadPosts();

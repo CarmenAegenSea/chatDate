@@ -456,3 +456,242 @@ DELETE /api/posts/{id}/comments/{commentId}?userId=1
 | 400 | 参数错误 / 业务异常 |
 | 404 | 资源不存在 |
 | 409 | 数据冲突（如手机号重复） |
+
+---
+
+## 游戏陪玩
+
+### 获取游戏列表
+
+**请求**
+
+```
+GET /api/game/games
+```
+
+**成功响应 200**
+
+```json
+[
+  { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
+  { "id": 2, "name": "和平精英", "icon": "🔫", "currentPlayers": 28 }
+]
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | long | 游戏唯一 ID |
+| `name` | string | 游戏名称 |
+| `icon` | string | 游戏图标 |
+| `currentPlayers` | int | 当前在线人数 |
+
+---
+
+### 检查用户游戏资料
+
+**请求**
+
+```
+GET /api/game/player/check?userId=1
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | long | 是 | 用户 ID |
+
+**成功响应 200**
+
+```json
+{
+  "hasProfile": true
+}
+```
+
+---
+
+### 获取用户游戏资料
+
+**请求**
+
+```
+GET /api/game/player?userId=1
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | long | 是 | 用户 ID |
+
+**成功响应 200**
+
+```json
+{
+  "userId": 1,
+  "nickname": "张三",
+  "avatar": null,
+  "isCompanion": false,
+  "bio": "",
+  "favoriteGames": [
+    { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 }
+  ]
+}
+```
+
+**错误响应**
+
+| 状态码 | 说明 |
+|--------|------|
+| 404 | 游戏资料不存在 |
+
+---
+
+### 首次设置游戏资料
+
+> 用户首次进入游戏模块时，选择喜欢的游戏，可选成为陪玩。
+
+**请求**
+
+```
+POST /api/game/player/setup?userId=1
+Content-Type: application/json
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | long | 是 | 用户 ID |
+
+**请求体**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `favoriteGameIds` | long[] | 是 | 喜欢的游戏 ID 列表 |
+| `isCompanion` | boolean | 否 | 是否成为陪玩，默认 false |
+| `bio` | string | 否 | 陪玩简介 |
+
+**示例**
+
+```json
+{
+  "favoriteGameIds": [1, 3],
+  "isCompanion": true,
+  "bio": "王者荣耀荣耀王者段位"
+}
+```
+
+**成功响应 201**
+
+```json
+{
+  "userId": 1,
+  "nickname": "张三",
+  "avatar": null,
+  "isCompanion": true,
+  "bio": "王者荣耀荣耀王者段位",
+  "favoriteGames": [
+    { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
+    { "id": 3, "name": "原神", "icon": "✨", "currentPlayers": 35 }
+  ]
+}
+```
+
+**错误响应**
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 游戏资料已存在 / 用户不存在 |
+
+---
+
+### 获取联机大厅
+
+> 展示所有游戏及其当前在线人数。
+
+**请求**
+
+```
+GET /api/game/lobby
+```
+
+**成功响应 200**
+
+```json
+[
+  { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
+  { "id": 2, "name": "和平精英", "icon": "🔫", "currentPlayers": 28 },
+  { "id": 3, "name": "原神", "icon": "✨", "currentPlayers": 35 }
+]
+```
+
+---
+
+### 获取游戏详情
+
+> 展示游戏详情，包括过去一小时的在线人数记录和可接单的陪玩人员。
+
+**请求**
+
+```
+GET /api/game/{gameId}/detail
+```
+
+**路径参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `gameId` | long | 游戏 ID |
+
+**成功响应 200**
+
+```json
+{
+  "game": { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
+  "records": [
+    { "recordedAt": "2026-05-25T10:00:00", "playerCount": 35 },
+    { "recordedAt": "2026-05-25T10:05:00", "playerCount": 38 }
+  ],
+  "companions": [
+    { "userId": 1, "nickname": "张三", "avatar": null, "bio": "荣耀王者段位" }
+  ]
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `game` | object | 游戏信息（同 GameResponse） |
+| `records` | array | 过去一小时在线人数记录（每 5 分钟一个点） |
+| `records[].recordedAt` | datetime | 记录时间 |
+| `records[].playerCount` | int | 当时在线人数 |
+| `companions` | array | 可接单的陪玩人员列表 |
+| `companions[].userId` | long | 陪玩用户 ID |
+| `companions[].nickname` | string | 陪玩昵称 |
+| `companions[].avatar` | string | 陪玩头像 |
+| `companions[].bio` | string | 陪玩简介 |
+
+---
+
+### 获取陪玩列表
+
+**请求**
+
+```
+GET /api/game/{gameId}/companions
+```
+
+**路径参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `gameId` | long | 游戏 ID |
+
+**成功响应 200**
+
+```json
+[
+  { "userId": 1, "nickname": "张三", "avatar": null, "bio": "荣耀王者段位" }
+]
+```
