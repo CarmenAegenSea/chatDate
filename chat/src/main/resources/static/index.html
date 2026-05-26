@@ -112,9 +112,12 @@
         .companion-card .cname { font-size: 14px; font-weight: 600; }
         .companion-card .cbio { font-size: 12px; color: #999; margin-top: 2px; }
         .companion-card .cbtn { padding: 4px 14px; font-size: 12px; }
+        .more-toggle { display: block; width: 100%; padding: 10px; text-align: center; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 8px; font-size: 14px; color: #666; cursor: pointer; margin-top: 8px; transition: all .2s; }
+        .more-toggle:hover { background: #f0f5ff; border-color: #1677ff; color: #1677ff; }
+        .more-toggle .arrow { display: inline-block; transition: transform .2s; margin-left: 4px; }
+        .more-toggle .arrow.open { transform: rotate(180deg); }
+        .more-games { overflow: hidden; transition: max-height .3s ease; }
 
-        .chart-wrap { background: #fafafa; border-radius: 8px; padding: 16px; margin: 12px 0; }
-        .chart-wrap canvas { width: 100%; height: 200px; display: block; }
     </style>
 </head>
 <body>
@@ -148,6 +151,7 @@
             <button onclick="switchTab('post')">发帖</button>
             <button onclick="switchTab('list')">列表</button>
             <button onclick="switchTab('game')">游戏</button>
+            <button onclick="switchTab('settings')">设置</button>
         </div>
 
         <!-- 登录/注册 -->
@@ -215,12 +219,37 @@
         <!-- 游戏陪玩 -->
         <div id="gameTab" class="hidden">
             <div id="gameLobbyView">
-                <h2 style="margin-bottom:12px;">联机大厅</h2>
+                <h2 style="margin-bottom:12px;">所有游戏</h2>
                 <div id="gameLobbyContent"><div class="empty">点击右上角"游戏"按钮进入</div></div>
             </div>
             <div id="gameDetailView" class="hidden">
-                <button class="back-btn" onclick="backToGameLobby()">← 返回大厅</button>
+                <button class="back-btn" onclick="backToGameLobby()">← 返回</button>
                 <div id="gameDetailContent"></div>
+            </div>
+        </div>
+        <!-- 设置 -->
+        <div id="settingsTab" class="hidden">
+            <div class="card">
+                <h2>修改昵称</h2>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <input id="settingsNickname" style="flex:1;min-width:120px;" maxlength="32" placeholder="输入新昵称">
+                    <button onclick="updateNicknameFromSettings()">确认修改</button>
+                    <span class="result" id="settingsNicknameResult"></span>
+                </div>
+            </div>
+            <div class="card">
+                <h2>修改喜欢的游戏</h2>
+                <p style="font-size:13px;color:#999;margin-bottom:12px;">重新选择你感兴趣的游戏</p>
+                <button onclick="showGameSetupForUpdate()">选择游戏</button>
+                <span class="result" id="settingsGameResult"></span>
+            </div>
+            <div class="card">
+                <h2>充值余额</h2>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <input id="settingsBalance" type="number" min="1" style="flex:1;min-width:120px;" placeholder="输入充值金额">
+                    <button onclick="topUpBalance()">充值</button>
+                    <span class="result" id="settingsBalanceResult"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -229,7 +258,7 @@
     <div id="gameSetupModal" class="modal-overlay hidden" onclick="if(event.target===this)closeGameSetup()">
         <div class="modal-content">
             <h3>🎮 选择你喜欢的游戏</h3>
-            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择至少一个游戏，即可进入联机大厅</p>
+            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择至少一个游戏，即可开始</p>
             <div id="gameSelectionList"></div>
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
@@ -273,16 +302,21 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏' };
+            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏', settings: '设置' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','list','detail','game'].forEach(t => {
+            ['login','post','list','detail','game','settings'].forEach(t => {
                 const el = document.getElementById(t + 'Tab');
                 if (el) el.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'list') loadPosts();
             if (tab === 'game') loadGameModule();
+            if (tab === 'settings') {
+                ['settingsNicknameResult','settingsGameResult','settingsBalanceResult'].forEach(id => {
+                    document.getElementById(id).textContent = '';
+                });
+            }
         }
 
         function setUser(data) {
@@ -656,10 +690,28 @@
                 '</div></div>';
         }
 
+        /* ===== 记数器动画 ===== */
+        function animateCounter(el, duration) {
+            duration = duration || 600;
+            const target = parseInt(el.getAttribute('data-target')) || 0;
+            if (target === 0) return;
+            const start = performance.now();
+            function step(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.floor(eased * target);
+                if (progress < 1) requestAnimationFrame(step);
+                else el.textContent = target;
+            }
+            requestAnimationFrame(step);
+        }
+
         /* ===== 游戏陪玩模块 ===== */
         let allGames = [];
         let selectedGameIds = new Set();
         let currentGameId = null;
+        let _gameSetupMode = 'setup'; // 'setup' | 'update'
 
         const FALLBACK_GAMES = [
             { id: 1, name: '王者荣耀', icon: '🎮' },
@@ -693,15 +745,16 @@
                     const el = document.getElementById('gameLobbyContent');
                     el.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
                         '<div style="font-size:48px;margin-bottom:16px;">🎮</div>' +
-                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎来到游戏大厅</div>' +
-                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你喜欢的游戏，即可查看各游戏在线人数</div>' +
-                        '<button onclick="showGameSetup()" style="padding:10px 32px;font-size:15px;">进入游戏大厅 →</button>' +
+                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎</div>' +
+                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你喜欢的游戏</div>' +
+                        '<button onclick="showGameSetup()" style="padding:10px 32px;font-size:15px;">开始 →</button>' +
                         '</div>';
                 }
             } catch (e) { toast('加载游戏模块失败: ' + e.message); }
         }
 
         async function showGameSetup() {
+            _gameSetupMode = 'setup';
             if (!allGames.length) allGames = FALLBACK_GAMES;
             selectedGameIds.clear();
             document.getElementById('isCompanionCheck').checked = false;
@@ -739,17 +792,25 @@
                     isCompanion: document.getElementById('isCompanionCheck').checked,
                     bio: document.getElementById('companionBio').value.trim()
                 };
-                const res = await fetch(API + '/api/game/player/setup?userId=' + currentUser.id, {
-                    method: 'POST',
+                const isUpdate = _gameSetupMode === 'update';
+                const url = isUpdate
+                    ? API + '/api/game/player?userId=' + currentUser.id
+                    : API + '/api/game/player/setup?userId=' + currentUser.id;
+                const res = await fetch(url, {
+                    method: isUpdate ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
                 const data = await res.json();
-                if (!res.ok) { toast(data.message || '设置失败'); return; }
+                if (!res.ok) { toast(data.message || '操作失败'); return; }
                 document.getElementById('gameSetupModal').classList.add('hidden');
-                toast('设置成功！');
+                toast('保存成功！');
                 selectedGameIds.clear();
-                await loadGameLobby();
+                if (isUpdate) {
+                    document.getElementById('settingsGameResult').textContent = '✅ 喜欢的游戏已更新';
+                } else {
+                    await loadGameLobby();
+                }
             } catch (e) { toast(e.message); }
         }
 
@@ -757,23 +818,69 @@
             document.getElementById('gameDetailView').classList.add('hidden');
             document.getElementById('gameLobbyView').classList.remove('hidden');
             const el = document.getElementById('gameLobbyContent');
-            el.innerHTML = '<div class="loading">加载大厅...</div>';
+            el.innerHTML = '<div class="loading">加载中...</div>';
 
             try {
-                const res = await fetch(API + '/api/game/lobby');
-                const data = await res.json();
-                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                const [lobbyRes, profileRes] = await Promise.all([
+                    fetch(API + '/api/game/lobby'),
+                    fetch(API + '/api/game/player?userId=' + currentUser.id)
+                ]);
+                const data = await lobbyRes.json();
+                if (!lobbyRes.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
                 if (!data.length) { el.innerHTML = '<div class="empty">暂无游戏</div>'; return; }
 
-                el.innerHTML = data.map(g => '<div class="game-card" onclick="enterGame(' + g.id + ')">' +
-                    '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
-                    '<div class="ginfo">' +
-                    '<div class="gname">' + esc(g.name) + '</div>' +
-                    '<div class="gcount">🟢 在线 <strong>' + g.currentPlayers + '</strong> 人</div>' +
-                    '</div>' +
-                    '<button class="gbtn" onclick="event.stopPropagation();enterGame(' + g.id + ')">查看详情</button>' +
-                    '</div>').join('');
+                let favIds = [];
+                if (profileRes.ok) {
+                    const profile = await profileRes.json();
+                    favIds = (profile.favoriteGames || []).map(g => g.id);
+                }
+
+                const favGames = data.filter(g => favIds.includes(g.id));
+                const otherGames = data.filter(g => !favIds.includes(g.id));
+
+                function renderGameCard(g) {
+                    return '<div class="game-card" onclick="enterGame(' + g.id + ')">' +
+                        '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
+                        '<div class="ginfo">' +
+                        '<div class="gname">' + esc(g.name) + '</div>' +
+                        '<div class="gcount">🟢 频道 <strong class="counter" data-target="' + g.currentPlayers + '">0</strong> 人</div>' +
+                        '</div>' +
+                        '<button class="gbtn" onclick="event.stopPropagation();enterGame(' + g.id + ')">查看详情</button>' +
+                        '</div>';
+                }
+
+                let html = '';
+                if (favGames.length) {
+                    html += favGames.map(renderGameCard).join('');
+                } else {
+                    html += data.map(renderGameCard).join('');
+                }
+
+                if (otherGames.length) {
+                    html += '<button class="more-toggle" onclick="toggleMoreGames(this)">更多频道 (<span class="more-count">' + otherGames.length + '</span>) <span class="arrow">▼</span></button>' +
+                        '<div class="more-games" style="max-height:0;">' +
+                        otherGames.map(renderGameCard).join('') +
+                        '</div>';
+                }
+
+                el.innerHTML = html;
+                requestAnimationFrame(() => {
+                    el.querySelectorAll('.counter').forEach(el => animateCounter(el));
+                });
             } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        function toggleMoreGames(btn) {
+            const container = btn.nextElementSibling;
+            const arrow = btn.querySelector('.arrow');
+            const isOpen = container.style.maxHeight && container.style.maxHeight !== '0px';
+            if (isOpen) {
+                container.style.maxHeight = '0';
+                arrow.classList.remove('open');
+            } else {
+                container.style.maxHeight = container.scrollHeight + 'px';
+                arrow.classList.add('open');
+            }
         }
 
         async function enterGame(gameId) {
@@ -791,10 +898,8 @@
                 let html = '<div class="card" style="padding:16px;margin-bottom:12px;">' +
                     '<div style="font-size:24px;margin-bottom:8px;">' + (data.game.icon || '🎮') + '</div>' +
                     '<h2 style="font-size:20px;">' + esc(data.game.name) + '</h2>' +
-                    '<div style="font-size:14px;color:#999;margin-top:4px;">当前在线: <strong style="color:#1677ff;font-size:20px;">' + data.game.currentPlayers + '</strong> 人</div>' +
-                    '</div>' +
-                    '<h3 style="margin-bottom:8px;font-size:15px;">📈 过去一小时在线人数</h3>' +
-                    '<div class="chart-wrap"><canvas id="gameChart" height="200"></canvas></div>';
+                    '<div style="font-size:14px;color:#999;margin-top:4px;">当前频道: <strong class="counter" data-target="' + data.game.currentPlayers + '" style="color:#1677ff;font-size:20px;">0</strong> 人</div>' +
+                    '</div>';
 
                 if (data.companions && data.companions.length > 0) {
                     html += '<h3 style="margin:16px 0 8px;font-size:15px;">🎯 可接单的陪玩 (' + data.companions.length + ')</h3>';
@@ -813,7 +918,9 @@
                 }
 
                 el.innerHTML = html;
-                drawChart(data.records || []);
+                requestAnimationFrame(() => {
+                    el.querySelectorAll('.counter').forEach(el => animateCounter(el));
+                });
             } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
         }
 
@@ -822,74 +929,71 @@
             loadGameLobby();
         }
 
-        function drawChart(records) {
-            const canvas = document.getElementById('gameChart');
-            if (!canvas || !records.length) return;
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            const W = rect.width, H = rect.height;
-            const pad = { top: 20, right: 16, bottom: 28, left: 40 };
-            const cw = W - pad.left - pad.right;
-            const ch = H - pad.top - pad.bottom;
+        /* ===== 设置页 ===== */
+        async function updateNicknameFromSettings() {
+            if (!currentUser) { toast('请先登录'); return; }
+            const nickname = document.getElementById('settingsNickname').value.trim();
+            if (!nickname) { toast('请输入昵称'); return; }
+            try {
+                const res = await fetch(API + '/api/auth/nickname?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname })
+                });
+                const text = await res.text();
+                const data = JSON.parse(text);
+                if (!res.ok) { toast(data.message || '修改失败'); return; }
+                setUser(data);
+                document.getElementById('settingsNickname').value = '';
+                document.getElementById('settingsNicknameResult').textContent = '✅ 昵称已更新';
+                toast('昵称修改成功');
+            } catch (e) { toast(e.message); }
+        }
 
-            ctx.clearRect(0, 0, W, H);
+        async function showGameSetupForUpdate() {
+            if (!currentUser) { toast('请先登录'); return; }
+            try {
+                const res = await fetch(API + '/api/game/player?userId=' + currentUser.id);
+                if (!res.ok) { toast('请先在游戏模块设置游戏资料'); return; }
+                const profile = await res.json();
+                _gameSetupMode = 'update';
+                if (!allGames.length) allGames = FALLBACK_GAMES;
+                selectedGameIds.clear();
+                const favIds = (profile.favoriteGames || []).map(g => g.id);
+                document.getElementById('isCompanionCheck').checked = profile.isCompanion || false;
+                document.getElementById('companionBio').value = profile.bio || '';
+                document.getElementById('companionBio').classList.toggle('hidden', !profile.isCompanion);
 
-            const values = records.map(r => r.playerCount);
-            const times = records.map(r => (r.recordedAt || '').substring(11, 16));
-            const max = Math.max(...values, 1);
-            const min = Math.min(...values, 0);
-            const range = max - min || 1;
+                const list = document.getElementById('gameSelectionList');
+                list.innerHTML = allGames.map(g =>
+                    '<div class="game-option' + (favIds.includes(g.id) ? ' selected' : '') + '" data-id="' + g.id + '" onclick="toggleGameSelect(this)">' +
+                    '<div class="check">✓</div>' +
+                    '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
+                    '<span class="gname">' + esc(g.name) + '</span></div>'
+                ).join('');
+                favIds.forEach(id => selectedGameIds.add(id));
+                document.getElementById('gameSetupModal').classList.remove('hidden');
+            } catch (e) { toast(e.message); }
+        }
 
-            const xs = records.map((_, i) => pad.left + (i / (records.length - 1 || 1)) * cw);
-            const ys = values.map(v => pad.top + ch - ((v - min) / range) * ch);
-
-            // grid lines
-            ctx.strokeStyle = '#eee';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = pad.top + (i / 4) * ch;
-                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
-                const val = Math.round(max - (i / 4) * range);
-                ctx.fillStyle = '#999'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
-                ctx.fillText(val, pad.left - 6, y + 4);
-            }
-
-            // line
-            ctx.strokeStyle = '#1677ff';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            xs.forEach((x, i) => i === 0 ? ctx.moveTo(x, ys[i]) : ctx.lineTo(x, ys[i]));
-            ctx.stroke();
-
-            // gradient fill
-            const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
-            grad.addColorStop(0, 'rgba(22,119,255,.15)');
-            grad.addColorStop(1, 'rgba(22,119,255,.01)');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.moveTo(xs[0], pad.top + ch);
-            xs.forEach((x, i) => ctx.lineTo(x, ys[i]));
-            ctx.lineTo(xs[xs.length - 1], pad.top + ch);
-            ctx.closePath();
-            ctx.fill();
-
-            // dots
-            xs.forEach((x, i) => {
-                ctx.beginPath(); ctx.arc(x, ys[i], 3, 0, Math.PI * 2);
-                ctx.fillStyle = '#1677ff'; ctx.fill();
-            });
-
-            // x labels (show first, middle, last)
-            ctx.fillStyle = '#999';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'center';
-            [0, Math.floor(times.length / 2), times.length - 1].forEach(i => {
-                if (i < times.length) ctx.fillText(times[i], xs[i], pad.top + ch + 16);
-            });
+        async function topUpBalance() {
+            if (!currentUser) { toast('请先登录'); return; }
+            const amount = parseInt(document.getElementById('settingsBalance').value);
+            if (!amount || amount <= 0) { toast('请输入有效的充值金额'); return; }
+            try {
+                const res = await fetch(API + '/api/auth/balance?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                });
+                const text = await res.text();
+                const data = JSON.parse(text);
+                if (!res.ok) { toast(data.message || '充值失败'); return; }
+                setUser(data);
+                document.getElementById('settingsBalance').value = '';
+                document.getElementById('settingsBalanceResult').textContent = '✅ 充值成功，当前余额: ' + (data.balance || 0);
+                toast('充值成功');
+            } catch (e) { toast(e.message); }
         }
 
         loadPosts();

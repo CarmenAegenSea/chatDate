@@ -62,6 +62,17 @@ public class UserService {
         return UserResponse.from(user);
     }
 
+    // 充值余额
+    public UserResponse topUpBalance(Long userId, Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new RuntimeException("充值金额必须大于0");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        user.setBalance(user.getBalance() == null ? amount : user.getBalance() + amount);
+        return UserResponse.from(userRepository.save(user));
+    }
+
     // 修改昵称
     public UserResponse updateNickname(Long userId, NicknameUpdateRequest request) {
         User user = userRepository.findById(userId)

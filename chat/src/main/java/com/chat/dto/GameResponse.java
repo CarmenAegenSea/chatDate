@@ -8,7 +8,7 @@ public class GameResponse {
     private Long id; // 游戏 ID
     private String name; // 游戏名称
     private String icon; // 游戏图标
-    private Integer currentPlayers; // 当前在线人数
+    private Integer currentPlayers; // 当前频道人数
 
     // 将游戏实体转换为响应 DTO
     public static GameResponse from(Game game) {

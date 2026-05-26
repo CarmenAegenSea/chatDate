@@ -607,7 +607,7 @@ Content-Type: application/json
 
 ---
 
-### 获取联机大厅
+### 获取所有游戏
 
 > 展示所有游戏及其当前在线人数。
 
@@ -631,7 +631,7 @@ GET /api/game/lobby
 
 ### 获取游戏详情
 
-> 展示游戏详情，包括过去一小时的在线人数记录和可接单的陪玩人员。
+> 展示游戏详情，包括可接单的陪玩人员。
 
 **请求**
 
@@ -650,10 +650,6 @@ GET /api/game/{gameId}/detail
 ```json
 {
   "game": { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
-  "records": [
-    { "recordedAt": "2026-05-25T10:00:00", "playerCount": 35 },
-    { "recordedAt": "2026-05-25T10:05:00", "playerCount": 38 }
-  ],
   "companions": [
     { "userId": 1, "nickname": "张三", "avatar": null, "bio": "荣耀王者段位" }
   ]
@@ -663,9 +659,6 @@ GET /api/game/{gameId}/detail
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `game` | object | 游戏信息（同 GameResponse） |
-| `records` | array | 过去一小时在线人数记录（每 5 分钟一个点） |
-| `records[].recordedAt` | datetime | 记录时间 |
-| `records[].playerCount` | int | 当时在线人数 |
 | `companions` | array | 可接单的陪玩人员列表 |
 | `companions[].userId` | long | 陪玩用户 ID |
 | `companions[].nickname` | string | 陪玩昵称 |

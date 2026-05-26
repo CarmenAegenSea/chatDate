@@ -19,7 +19,7 @@ public class Game {
     private String icon; // 游戏图标（emoji）
 
     @Column(nullable = false)
-    private Integer currentPlayers = 0; // 当前在线人数
+    private Integer currentPlayers = 0; // 当前频道人数
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 创建时间

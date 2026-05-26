@@ -53,7 +53,15 @@ public class GameController {
                 .body(gameService.setupProfile(userId, request));
     }
 
-    // 获取联机大厅（各游戏当前在线人数）
+    // 更新游戏资料（喜欢的游戏、陪玩设置）
+    @PutMapping("/player")
+    public ResponseEntity<GamePlayerResponse> updateProfile(
+            @RequestParam Long userId,
+            @RequestBody GameSetupRequest request) {
+        return ResponseEntity.ok(gameService.updateProfile(userId, request));
+    }
+
+    // 获取联机大厅（各游戏当前频道人数）
     @GetMapping("/lobby")
     public ResponseEntity<List<GameResponse>> getLobby() {
         return ResponseEntity.ok(gameService.getLobby());

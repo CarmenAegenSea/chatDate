@@ -13,4 +13,6 @@ public interface GamePlayerRepository extends JpaRepository<GamePlayer, Long> {
     Optional<GamePlayer> findByUserId(Long userId);
     // 查询某个游戏中所有可接单的陪玩
     List<GamePlayer> findByIsCompanionTrueAndFavoriteGamesContains(Game game);
+    // 统计某个游戏的玩家总数
+    long countByFavoriteGamesContains(Game game);
 }
