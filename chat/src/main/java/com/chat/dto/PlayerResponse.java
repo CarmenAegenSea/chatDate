@@ -6,21 +6,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 // 陪玩账号响应体
-// 包含关联 User 的 phone / nickname / avatar 字段，前端无需额外查询
 public class PlayerResponse {
 
-    private Long id;                    // 陪玩账号 ID
-    private Long userId;                // 关联的用户 ID
-    private String phone;               // 手机号（来自 User）
-    private String nickname;            // 昵称（来自 User）
-    private String avatar;              // 头像 URL（来自 User）
-    private String bio;                 // 个人简介
-    private Integer hourlyRate;         // 时薪
-    private String status;              // 在线状态
-    private Boolean gamesSetup;         // 是否已设置喜欢的游戏
-    private LocalDateTime createdAt;    // 创建时间
-    private Long totalDuration;         // 总计陪玩时长（分钟）
-    private List<GameInfo> games;       // 玩家选择的游戏列表
+    private Long id;
+    private Long userId;
+    private String nickname;
+    private String avatar;
+    private String bio;
+    private Integer hourlyRate;
+    private String status;
+    private Boolean gamesSetup;
+    private LocalDateTime createdAt;
+    private Long totalDuration;
+    private List<GameInfo> games;
 
     public static PlayerResponse from(Player player) {
         return from(player, false, List.of());
@@ -34,7 +32,6 @@ public class PlayerResponse {
         PlayerResponse r = new PlayerResponse();
         r.setId(player.getId());
         r.setUserId(player.getUser().getId());
-        r.setPhone(player.getUser().getPhone());
         r.setNickname(player.getUser().getNickname());
         r.setAvatar(player.getUser().getAvatar());
         r.setBio(player.getBio());
@@ -43,22 +40,25 @@ public class PlayerResponse {
         r.setGamesSetup(gamesSetup);
         r.setCreatedAt(player.getCreatedAt());
         r.setTotalDuration(player.getTotalDuration());
-        r.setGames(games.stream().map(pg -> new GameInfo(pg.getGameCode(), pg.getSkillLevel())).toList());
+        r.setGames(games.stream().map(pg -> {
+            GameInfo info = new GameInfo();
+            info.setGameCode(pg.getGameCode());
+            info.setSkillLevel(pg.getSkillLevel());
+            info.setIsCompanion(pg.getIsCompanion());
+            info.setQualifications(pg.getQualifications());
+            info.setAcceptedRules(pg.getAcceptedRules());
+            return info;
+        }).toList());
         return r;
     }
 
-    // 游戏信息内部类
     public static class GameInfo {
         private String gameCode;
         private String gameName;
         private String skillLevel;
-
-        public GameInfo() {}
-
-        public GameInfo(String gameCode, String skillLevel) {
-            this.gameCode = gameCode;
-            this.skillLevel = skillLevel;
-        }
+        private Boolean isCompanion;
+        private String qualifications;
+        private Boolean acceptedRules;
 
         public String getGameCode() { return gameCode; }
         public void setGameCode(String gameCode) { this.gameCode = gameCode; }
@@ -66,14 +66,18 @@ public class PlayerResponse {
         public void setGameName(String gameName) { this.gameName = gameName; }
         public String getSkillLevel() { return skillLevel; }
         public void setSkillLevel(String skillLevel) { this.skillLevel = skillLevel; }
+        public Boolean getIsCompanion() { return isCompanion; }
+        public void setIsCompanion(Boolean isCompanion) { this.isCompanion = isCompanion; }
+        public String getQualifications() { return qualifications; }
+        public void setQualifications(String qualifications) { this.qualifications = qualifications; }
+        public Boolean getAcceptedRules() { return acceptedRules; }
+        public void setAcceptedRules(Boolean acceptedRules) { this.acceptedRules = acceptedRules; }
     }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getAvatar() { return avatar; }

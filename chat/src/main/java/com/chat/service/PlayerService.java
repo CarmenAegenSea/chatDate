@@ -101,7 +101,11 @@ public class PlayerService {
         playerGameRepository.deleteByPlayerId(playerId);
         playerGameRepository.flush();
         List<PlayerGame> games = request.getGames().stream()
-                .map(item -> new PlayerGame(player, item.getGameCode(), item.getSkillLevel()))
+                .map(item -> {
+                    PlayerGame pg = new PlayerGame(player, item.getGameCode());
+                    pg.setSkillLevel(item.getSkillLevel());
+                    return pg;
+                })
                 .collect(Collectors.toList());
         playerGameRepository.saveAll(games);
     }

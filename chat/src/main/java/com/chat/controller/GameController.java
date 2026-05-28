@@ -40,24 +40,20 @@ public class GameController {
         return ResponseEntity.ok(Map.of("hasProfile", gameService.hasProfile(userId)));
     }
 
-    @PostMapping("/player/setup")
-    public ResponseEntity<PlayerResponse> setupProfile(
-            @RequestParam Long userId,
-            @RequestBody GameService.GameSetupRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(gameService.setupProfile(userId, request));
-    }
-
-    @PutMapping("/player")
-    public ResponseEntity<PlayerResponse> updateProfile(
-            @RequestParam Long userId,
-            @RequestBody GameService.GameSetupRequest request) {
-        return ResponseEntity.ok(gameService.updateProfile(userId, request));
-    }
-
     @GetMapping("/lobby")
-    public ResponseEntity<List<GameResponse>> getLobby() {
-        return ResponseEntity.ok(gameService.getLobby());
+    public ResponseEntity<List<GameResponse>> getLobby(@RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(gameService.getLobby(userId));
+    }
+
+    @GetMapping("/interests/check")
+    public ResponseEntity<Map<String, Boolean>> checkInterests(@RequestParam Long userId) {
+        return ResponseEntity.ok(Map.of("hasInterests", gameService.hasInterests(userId)));
+    }
+
+    @PostMapping("/interests")
+    public ResponseEntity<Void> saveInterests(@RequestParam Long userId, @RequestBody Map<String, List<String>> body) {
+        gameService.saveInterests(userId, body.getOrDefault("gameCodes", List.of()));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{gameCode}/detail")
@@ -68,5 +64,32 @@ public class GameController {
     @GetMapping("/{gameCode}/companions")
     public ResponseEntity<List<GameDetailResponse.CompanionInfo>> getCompanions(@PathVariable String gameCode) {
         return ResponseEntity.ok(gameService.getCompanions(gameCode));
+    }
+
+    @PostMapping("/{gameCode}/join")
+    public ResponseEntity<Void> joinChannel(@PathVariable String gameCode, @RequestParam Long userId) {
+        gameService.joinChannel(userId, gameCode);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{gameCode}/become-companion")
+    public ResponseEntity<?> becomeCompanion(
+            @PathVariable String gameCode,
+            @RequestParam Long userId,
+            @RequestBody Map<String, Object> body) {
+        try {
+            String qualifications = (String) body.getOrDefault("qualifications", "");
+            Boolean acceptedRules = (Boolean) body.getOrDefault("acceptedRules", false);
+            gameService.becomeCompanion(userId, gameCode, qualifications, acceptedRules);
+            return ResponseEntity.ok(Map.of("message", "已成为陪玩"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{gameCode}/status")
+    public ResponseEntity<Map<String, Object>> getChannelStatus(
+            @PathVariable String gameCode, @RequestParam Long userId) {
+        return ResponseEntity.ok(gameService.getChannelStatus(userId, gameCode));
     }
 }

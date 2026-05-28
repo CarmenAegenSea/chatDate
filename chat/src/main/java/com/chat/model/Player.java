@@ -2,20 +2,27 @@ package com.chat.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 // 陪玩账号实体，映射 players 表
-// phone / nickname / avatar / password 均通过 @OneToOne 关联 User 表获取
 @Entity
 @Table(name = "players")
 public class Player {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;                      // 陪玩账号主键
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;                    // 关联的用户账号
+    private User user;
+
+    @ManyToMany
+    @JoinTable(name = "player_interests",
+        joinColumns = @JoinColumn(name = "player_id"),
+        inverseJoinColumns = @JoinColumn(name = "game_option_id"))
+    private Set<GameOption> interests = new HashSet<>();
 
     @Column(length = 500)
     private String bio;                   // 个人简介
@@ -59,4 +66,6 @@ public class Player {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public Long getTotalDuration() { return totalDuration; }
     public void setTotalDuration(Long totalDuration) { this.totalDuration = totalDuration; }
+    public Set<GameOption> getInterests() { return interests; }
+    public void setInterests(Set<GameOption> interests) { this.interests = interests; }
 }

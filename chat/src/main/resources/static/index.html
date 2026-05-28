@@ -264,6 +264,16 @@
             </div>
         </div>
 
+        <!-- 兴趣选择弹窗 -->
+        <div id="interestModal" class="modal-overlay hidden" onclick="if(event.target===this)closeInterestModal()">
+            <div class="modal-content">
+                <h3>🎮 选择你感兴趣的游戏</h3>
+                <p style="font-size:13px;color:#999;margin-bottom:12px;">选择的游戏将展示在首页，其他游戏折叠在"更多频道"中</p>
+                <div id="interestGameList"></div>
+                <button onclick="saveInterestSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
+            </div>
+        </div>
+
         <!-- 设置 -->
         <div id="settingsTab" class="hidden">
             <div class="card">
@@ -273,12 +283,6 @@
                     <button onclick="updateNicknameFromSettings()">确认修改</button>
                     <span class="result" id="settingsNicknameResult"></span>
                 </div>
-            </div>
-            <div class="card">
-                <h2>修改喜欢的游戏</h2>
-                <p style="font-size:13px;color:#999;margin-bottom:12px;">重新选择你感兴趣的游戏</p>
-                <button onclick="showGameSetupForUpdate()">选择游戏</button>
-                <span class="result" id="settingsGameResult"></span>
             </div>
             <div class="card">
                 <h2>充值余额</h2>
@@ -291,18 +295,7 @@
         </div>
     </div>
 
-    <!-- 游戏设置弹窗 -->
-    <div id="gameSetupModal" class="modal-overlay hidden" onclick="if(event.target===this)closeGameSetup()">
-        <div class="modal-content">
-            <h3>🎮 选择你的陪玩游戏</h3>
-            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择你擅长的游戏</p>
-            <div id="gameSelectionList"></div>
-            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
-                <input id="companionBio" style="margin-top:8px;" placeholder="介绍自己，如：王者荣耀最强王者段位" maxlength="200">
-            </div>
-            <button onclick="saveGameSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
-        </div>
-    </div>
+
 
     <div id="toast" class="toast"></div>
 
@@ -348,7 +341,7 @@
             if (tab === 'game') loadGameModule();
             if (tab === 'companion') loadCompanions();
             if (tab === 'settings') {
-                ['settingsNicknameResult','settingsGameResult','settingsBalanceResult'].forEach(id => {
+                ['settingsNicknameResult','settingsBalanceResult'].forEach(id => {
                     document.getElementById(id).textContent = '';
                 });
             }
@@ -742,99 +735,69 @@
             requestAnimationFrame(step);
         }
 
-        /* ===== 游戏陪玩模块 ===== */
-        let allGames = [];
-        let selectedGameCodes = new Set();
+        /* ===== 游戏模块 ===== */
         let currentGameCode = null;
-        let _gameSetupMode = 'setup'; // 'setup' | 'update'
+        let interestSelectedCodes = new Set();
 
         async function loadGameModule() {
-            if (!currentUser) { toast('请先登录才能使用游戏功能'); return; }
+            if (!currentUser) { toast('请先登录'); return; }
+            try {
+                const res = await fetch(API + '/api/game/interests/check?userId=' + currentUser.id);
+                const data = await res.json();
+                if (data.hasInterests) {
+                    loadGameLobby();
+                } else {
+                    showInterestSetup();
+                }
+            } catch (e) { toast('加载失败: ' + e.message); }
+        }
+
+        async function showInterestSetup() {
             document.getElementById('gameDetailView').classList.add('hidden');
             document.getElementById('gameLobbyView').classList.remove('hidden');
+            document.getElementById('gameLobbyContent').innerHTML = '<div class="loading">加载游戏列表...</div>';
 
+            interestSelectedCodes.clear();
             try {
                 const res = await fetch(API + '/api/game/games');
-                if (res.ok) allGames = await res.json();
-            } catch(e) {}
+                const allGames = await res.json();
+                if (!res.ok || !allGames.length) { document.getElementById('gameLobbyContent').innerHTML = '<div class="empty">暂无游戏</div>'; return; }
 
-            try {
-                const check = await fetch(API + '/api/game/player/check?userId=' + currentUser.id);
-                const checkData = await check.json();
-                if (checkData.hasProfile) {
-                    await loadGameLobby();
-                } else {
-                    const el = document.getElementById('gameLobbyContent');
-                    el.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
-                        '<div style="font-size:48px;margin-bottom:16px;">🎮</div>' +
-                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎来到游戏大厅</div>' +
-                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你的陪玩资料</div>' +
-                        '<button onclick="showGameSetup()" style="padding:10px 32px;font-size:15px;">开始 →</button>' +
-                        '</div>';
-                }
-            } catch (e) { toast('加载游戏模块失败: ' + e.message); }
+                const list = document.getElementById('interestGameList');
+                list.innerHTML = allGames.map(g =>
+                    '<div class="game-option" data-code="' + g.code + '" onclick="toggleInterest(this)">' +
+                    '<div class="check">✓</div>' +
+                    '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
+                    '<span class="gname">' + esc(g.name) + '</span></div>'
+                ).join('');
+                document.getElementById('interestModal').classList.remove('hidden');
+            } catch (e) { document.getElementById('gameLobbyContent').innerHTML = '<div class="empty">加载失败</div>'; }
         }
 
-        async function showGameSetup() {
-            _gameSetupMode = 'setup';
-            if (!allGames.length) {
-                try {
-                    const res = await fetch(API + '/api/game/games');
-                    if (res.ok) allGames = await res.json();
-                } catch(e) {}
-            }
-            selectedGameCodes.clear();
-            document.getElementById('companionBio').value = '';
-
-            const list = document.getElementById('gameSelectionList');
-            list.innerHTML = allGames.map(g =>
-                '<div class="game-option" data-code="' + g.code + '" onclick="toggleGameSelect(this)">' +
-                '<div class="check">✓</div>' +
-                '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
-                '<span class="gname">' + esc(g.name) + '</span></div>'
-            ).join('');
-
-            document.getElementById('gameSetupModal').classList.remove('hidden');
-        }
-
-        function toggleGameSelect(el) {
+        function toggleInterest(el) {
             el.classList.toggle('selected');
             const code = el.dataset.code;
-            if (selectedGameCodes.has(code)) selectedGameCodes.delete(code);
-            else selectedGameCodes.add(code);
+            if (interestSelectedCodes.has(code)) interestSelectedCodes.delete(code);
+            else interestSelectedCodes.add(code);
         }
 
-        function closeGameSetup() {
-            document.getElementById('gameSetupModal').classList.add('hidden');
-            selectedGameCodes.clear();
+        function closeInterestModal() {
+            document.getElementById('interestModal').classList.add('hidden');
+            interestSelectedCodes.clear();
         }
 
-        async function saveGameSetup() {
-            if (selectedGameCodes.size === 0) { toast('请至少选择一个游戏'); return; }
+        async function saveInterestSetup() {
+            if (interestSelectedCodes.size === 0) { toast('请至少选择一个感兴趣的游戏'); return; }
             try {
-                const body = {
-                    gameCodes: Array.from(selectedGameCodes),
-                    bio: document.getElementById('companionBio').value.trim()
-                };
-                const isUpdate = _gameSetupMode === 'update';
-                const url = isUpdate
-                    ? API + '/api/game/player?userId=' + currentUser.id
-                    : API + '/api/game/player/setup?userId=' + currentUser.id;
-                const res = await fetch(url, {
-                    method: isUpdate ? 'PUT' : 'POST',
+                const res = await fetch(API + '/api/game/interests?userId=' + currentUser.id, {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+                    body: JSON.stringify({ gameCodes: Array.from(interestSelectedCodes) })
                 });
-                const data = await res.json();
-                if (!res.ok) { toast(data.message || '操作失败'); return; }
-                document.getElementById('gameSetupModal').classList.add('hidden');
-                toast('保存成功！');
-                selectedGameCodes.clear();
-                if (isUpdate) {
-                    document.getElementById('settingsGameResult').textContent = '✅ 陪玩资料已更新';
-                } else {
-                    await loadGameLobby();
-                }
+                if (!res.ok) { toast('保存失败'); return; }
+                document.getElementById('interestModal').classList.add('hidden');
+                interestSelectedCodes.clear();
+                loadGameLobby();
             } catch (e) { toast(e.message); }
         }
 
@@ -845,53 +808,141 @@
             el.innerHTML = '<div class="loading">加载中...</div>';
 
             try {
-                const [lobbyRes, profileRes] = await Promise.all([
-                    fetch(API + '/api/game/lobby'),
-                    fetch(API + '/api/game/player?userId=' + currentUser.id)
-                ]);
-                const data = await lobbyRes.json();
-                if (!lobbyRes.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                const res = await fetch(API + '/api/game/lobby?userId=' + currentUser.id);
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
                 if (!data.length) { el.innerHTML = '<div class="empty">暂无游戏</div>'; return; }
 
-                let favCodes = [];
-                if (profileRes.ok) {
-                    const profile = await profileRes.json();
-                    favCodes = (profile.games || []).map(g => g.gameCode).filter(Boolean);
-                }
+                const interested = data.filter(g => g.interested);
+                const others = data.filter(g => !g.interested);
 
-                const favGames = data.filter(g => favCodes.includes(g.code));
-                const otherGames = data.filter(g => !favCodes.includes(g.code));
-
-                function renderGameCard(g) {
+                function renderCard(g) {
                     return '<div class="game-card" onclick="enterGame(\'' + g.code + '\')">' +
                         '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
                         '<div class="ginfo">' +
                         '<div class="gname">' + esc(g.name) + '</div>' +
-                        '<div class="gcount">🟢 频道 <strong class="counter" data-target="' + g.currentPlayers + '">0</strong> 人</div>' +
+                        '<div class="gcount">👥 <strong>' + g.currentPlayers + '</strong> 人</div>' +
                         '</div>' +
-                        '<button class="gbtn" onclick="event.stopPropagation();enterGame(\'' + g.code + '\')">查看详情</button>' +
+                        '<button class="gbtn" onclick="event.stopPropagation();enterGame(\'' + g.code + '\')">进入频道</button>' +
                         '</div>';
                 }
 
-                let html = '';
-                if (favGames.length) {
-                    html += favGames.map(renderGameCard).join('');
-                } else {
-                    html += data.map(renderGameCard).join('');
-                }
+                let html = interested.map(renderCard).join('');
 
-                if (otherGames.length) {
-                    html += '<button class="more-toggle" onclick="toggleMoreGames(this)">更多频道 (<span class="more-count">' + otherGames.length + '</span>) <span class="arrow">▼</span></button>' +
+                if (others.length) {
+                    html += '<button class="more-toggle" onclick="toggleMoreGames(this)">更多频道 (<span class="more-count">' + others.length + '</span>) <span class="arrow">▼</span></button>' +
                         '<div class="more-games" style="max-height:0;">' +
-                        otherGames.map(renderGameCard).join('') +
+                        others.map(renderCard).join('') +
                         '</div>';
+                } else if (!interested.length) {
+                    html = '<div class="empty">暂无游戏</div>';
                 }
 
                 el.innerHTML = html;
-                requestAnimationFrame(() => {
-                    el.querySelectorAll('.counter').forEach(el => animateCounter(el));
-                });
             } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        function backToGameLobby() {
+            currentGameCode = null;
+            loadGameLobby();
+        }
+
+        async function enterGame(gameCode) {
+            currentGameCode = gameCode;
+            document.getElementById('gameLobbyView').classList.add('hidden');
+            document.getElementById('gameDetailView').classList.remove('hidden');
+            const el = document.getElementById('gameDetailContent');
+            el.innerHTML = '<div class="loading">加载详情...</div>';
+
+            try {
+                const [detailRes, statusRes] = await Promise.all([
+                    fetch(API + '/api/game/' + gameCode + '/detail'),
+                    currentUser ? fetch(API + '/api/game/' + gameCode + '/status?userId=' + currentUser.id) : Promise.resolve(null)
+                ]);
+
+                const data = await detailRes.json();
+                if (!detailRes.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+
+                let status = { joined: false, isCompanion: false };
+                if (statusRes && statusRes.ok) status = await statusRes.json();
+
+                let html = '<div class="card" style="padding:16px;margin-bottom:12px;">' +
+                    '<div style="display:flex;align-items:center;gap:16px;">' +
+                    '<div style="font-size:36px;">' + (data.game.icon || '🎮') + '</div>' +
+                    '<div style="flex:1;">' +
+                    '<h2 style="font-size:20px;margin:0;">' + esc(data.game.name) + '</h2>' +
+                    '<div style="font-size:14px;color:#999;margin-top:4px;">当前频道 <strong>' + data.game.currentPlayers + '</strong> 人</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">';
+
+                if (status.joined) {
+                    html += '<span style="padding:6px 16px;border-radius:6px;background:#f0f5ff;color:#1677ff;font-size:13px;">✅ 已加入频道</span>';
+                    if (!status.isCompanion) {
+                        html += '<button onclick="showBecomeCompanion(\'' + gameCode + '\', this)" style="padding:6px 16px;font-size:13px;background:#52c41a;">成为陪玩</button>';
+                    } else {
+                        html += '<span style="padding:6px 16px;border-radius:6px;background:#fff7e6;color:#fa8c16;font-size:13px;">🎯 已是陪玩</span>';
+                    }
+                } else {
+                    html += '<button onclick="joinChannel(\'' + gameCode + '\')" style="padding:6px 16px;font-size:13px;">加入频道</button>';
+                }
+
+                html += '</div></div>';
+
+                el.innerHTML = html;
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        async function joinChannel(gameCode) {
+            if (!currentUser) { toast('请先登录'); return; }
+            try {
+                const res = await fetch(API + '/api/game/' + gameCode + '/join?userId=' + currentUser.id, { method: 'POST' });
+                if (!res.ok) { const d = await res.json(); toast(d.message || '加入失败'); return; }
+                toast('已加入频道');
+                enterGame(gameCode);
+            } catch (e) { toast(e.message); }
+        }
+
+        async function showBecomeCompanion(gameCode, btn) {
+            const existing = document.getElementById('companionForm');
+            if (existing) {
+                existing.remove();
+                return;
+            }
+            const formHtml = '<div class="card" id="companionForm" style="margin-top:12px;border:2px solid #52c41a;">' +
+                '<h3 style="font-size:16px;margin-bottom:12px;">成为 ' + esc(gameCode) + ' 频道陪玩</h3>' +
+                '<div><label>游戏 ID</label><input id="companionGameId" value="' + esc(gameCode) + '" readonly style="background:#f5f5f5;color:#999;"></div>' +
+                '<div><label>资历（段位/时长/经验等）</label><textarea id="companionQualifications" placeholder="例如：王者荣耀最强王者50星，陪玩经验2年" maxlength="500"></textarea></div>' +
+                '<div style="margin-bottom:10px;">' +
+                '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">' +
+                '<input type="checkbox" id="companionRulesCheck"> 我已阅读并接受 <a href="#" onclick="event.preventDefault();toast(\'陪玩条例：1.不得爽约 2.不得消极游戏 3.保持良好的沟通\')">陪玩条例</a>' +
+                '</label>' +
+                '</div>' +
+                '<button onclick="submitBecomeCompanion(\'' + gameCode + '\')" style="width:100%;padding:10px;font-size:15px;background:#52c41a;">提交申请</button>' +
+                '<div class="result" id="companionResult"></div>' +
+                '</div>';
+
+            btn.parentElement.insertAdjacentHTML('afterend', formHtml);
+        }
+
+        async function submitBecomeCompanion(gameCode) {
+            if (!currentUser) { toast('请先登录'); return; }
+            const qualifications = document.getElementById('companionQualifications').value.trim();
+            const acceptedRules = document.getElementById('companionRulesCheck').checked;
+            if (!qualifications) { toast('请填写资历信息'); return; }
+            if (!acceptedRules) { toast('请接受陪玩条例'); return; }
+
+            try {
+                const res = await fetch(API + '/api/game/' + gameCode + '/become-companion?userId=' + currentUser.id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qualifications, acceptedRules })
+                });
+                const data = await res.json();
+                if (!res.ok) { toast(data.message || '提交失败'); return; }
+                toast('已成为陪玩！');
+                enterGame(gameCode);
+            } catch (e) { toast(e.message); }
         }
 
         function toggleMoreGames(btn) {
@@ -905,54 +956,6 @@
                 container.style.maxHeight = container.scrollHeight + 'px';
                 arrow.classList.add('open');
             }
-        }
-
-        async function enterGame(gameCode) {
-            currentGameCode = gameCode;
-            document.getElementById('gameLobbyView').classList.add('hidden');
-            document.getElementById('gameDetailView').classList.remove('hidden');
-            const el = document.getElementById('gameDetailContent');
-            el.innerHTML = '<div class="loading">加载详情...</div>';
-
-            try {
-                const res = await fetch(API + '/api/game/' + gameCode + '/detail');
-                const data = await res.json();
-                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
-
-                let html = '<div class="card" style="padding:16px;margin-bottom:12px;">' +
-                    '<div style="font-size:24px;margin-bottom:8px;">' + (data.game.icon || '🎮') + '</div>' +
-                    '<h2 style="font-size:20px;">' + esc(data.game.name) + '</h2>' +
-                    '<div style="font-size:14px;color:#999;margin-top:4px;">当前频道: <strong class="counter" data-target="' + data.game.currentPlayers + '" style="color:#1677ff;font-size:20px;">0</strong> 人</div>' +
-                    '</div>';
-
-                if (data.companions && data.companions.length > 0) {
-                    html += '<h3 style="margin:16px 0 8px;font-size:15px;">🎯 可接单的陪玩 (' + data.companions.length + ')</h3>';
-                    html += data.companions.map(c => {
-                        const statusColor = c.status === 'ONLINE' ? '#52c41a' : c.status === 'BUSY' ? '#faad14' : '#d9d9d9';
-                        const statusText = c.status === 'ONLINE' ? '在线' : c.status === 'BUSY' ? '忙碌' : '离线';
-                        return '<div class="companion-card">' +
-                        '<div class="cavatar">' + esc((c.nickname || '?').charAt(0)) + '</div>' +
-                        '<div class="cinfo">' +
-                        '<div class="cname">' + esc(c.nickname) + ' <span style="color:' + statusColor + ';font-size:11px;">● ' + esc(statusText) + '</span></div>' +
-                        '<div class="cbio">' + esc(c.bio || '暂无简介') + (c.skillLevel ? ' | 水平: ' + esc(c.skillLevel) : '') + '</div>' +
-                        '</div>' +
-                        '<button class="cbtn" onclick="toast(\'功能开发中，敬请期待\')">联系</button>' +
-                        '</div>';
-                    }).join('');
-                } else {
-                    html += '<div style="text-align:center;padding:20px;color:#ccc;font-size:14px;">暂无陪玩</div>';
-                }
-
-                el.innerHTML = html;
-                requestAnimationFrame(() => {
-                    el.querySelectorAll('.counter').forEach(el => animateCounter(el));
-                });
-            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
-        }
-
-        function backToGameLobby() {
-            currentGameCode = null;
-            loadGameLobby();
         }
 
         /* ===== 陪玩列表页 ===== */
@@ -969,7 +972,8 @@
                     const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
                     const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
                     const duration = formatDuration(p.totalDuration || 0);
-                    const games = (p.games || []).map(g => '<span class="ctag">' + esc(g.gameName || g.gameCode) + (g.skillLevel ? ' · ' + esc(g.skillLevel) : '') + '</span>').join('');
+                    const companionGames = (p.games || []).filter(g => g.isCompanion);
+                    const games = companionGames.map(g => '<span class="ctag">🎯 ' + esc(g.gameCode) + '</span>').join('');
                     return '<div class="companion-list-card" onclick="showCompanionDetail(' + p.id + ')">' +
                         '<div class="cavatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
                         '<div class="cinfo">' +
@@ -978,7 +982,7 @@
                         (p.hourlyRate ? '<span>💰 ' + p.hourlyRate + ' 元/时</span>' : '') +
                         '<span>⏱ ' + esc(duration) + '</span>' +
                         '</div>' +
-                        '<div style="margin-top:4px;">' + games + '</div>' +
+                        '<div style="margin-top:4px;">' + (games || '<span style="color:#ccc;font-size:12px;">尚未成为陪玩</span>') + '</div>' +
                         '</div>' +
                         '</div>';
                 }).join('');
@@ -1007,7 +1011,8 @@
                 const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
                 const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
                 const duration = formatDuration(p.totalDuration || 0);
-                const games = (p.games || []).map(g => '<span class="detail-game-tag">' + esc(g.gameName || g.gameCode) + ' · ' + esc(g.skillLevel || '未设置') + '</span>').join('') || '<span style="color:#ccc;">未选择游戏</span>';
+                const companionGames = (p.games || []).filter(g => g.isCompanion);
+                const games = companionGames.map(g => '<span class="detail-game-tag">🎯 ' + esc(g.gameCode) + (g.qualifications ? ' · ' + esc(g.qualifications) : '') + '</span>').join('') || '<span style="color:#ccc;">尚未成为陪玩</span>';
 
                 let html = '<div class="detail-header">' +
                     '<div class="davatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
@@ -1019,17 +1024,13 @@
 
                 html += '<div class="detail-section"><div class="label">个人简介</div><div class="value">' + esc(p.bio || '暂无简介') + '</div></div>';
 
-                if (p.phone) {
-                    html += '<div class="detail-section"><div class="label">手机号</div><div class="value">' + esc(p.phone) + '</div></div>';
-                }
-
                 if (p.hourlyRate) {
                     html += '<div class="detail-section"><div class="label">时薪</div><div class="value">💰 ' + p.hourlyRate + ' 元/小时</div></div>';
                 }
 
                 html += '<div class="detail-section"><div class="label">总计陪玩时长</div><div class="value">⏱ ' + esc(duration) + '</div></div>';
 
-                html += '<div class="detail-section"><div class="label">擅长游戏</div><div>' + games + '</div></div>';
+                html += '<div class="detail-section"><div class="label">陪玩游戏</div><div>' + games + '</div></div>';
 
                 html += '<div style="margin-top:16px;text-align:center;"><button onclick="closeCompanionDetail()">关闭</button></div>';
 
@@ -1059,34 +1060,6 @@
                 document.getElementById('settingsNickname').value = '';
                 document.getElementById('settingsNicknameResult').textContent = '✅ 昵称已更新';
                 toast('昵称修改成功');
-            } catch (e) { toast(e.message); }
-        }
-
-        async function showGameSetupForUpdate() {
-            if (!currentUser) { toast('请先登录'); return; }
-            try {
-                const res = await fetch(API + '/api/game/player?userId=' + currentUser.id);
-                if (!res.ok) { toast('请先在游戏模块设置陪玩资料'); return; }
-                const profile = await res.json();
-                _gameSetupMode = 'update';
-                if (!allGames.length) {
-                    const gr = await fetch(API + '/api/game/games');
-                    if (gr.ok) allGames = await gr.json();
-                }
-                selectedGameCodes.clear();
-                const favCodes = (profile.games || []).map(g => g.gameCode).filter(Boolean);
-                document.getElementById('companionBio').value = profile.bio || '';
-
-                const list = document.getElementById('gameSelectionList');
-                list.innerHTML = allGames.map(g =>
-                    '<div class="game-option' + (favCodes.includes(g.code) ? ' selected' : '') + '" data-code="' + g.code + '" onclick="toggleGameSelect(this)">' +
-                    '<div class="check">✓</div>' +
-                    '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
-                    '<span class="gname">' + esc(g.name) + '</span></div>'
-                ).join('');
-                favCodes.forEach(code => selectedGameCodes.add(code));
-                document.getElementById('companionBio').classList.remove('hidden');
-                document.getElementById('gameSetupModal').classList.remove('hidden');
             } catch (e) { toast(e.message); }
         }
 

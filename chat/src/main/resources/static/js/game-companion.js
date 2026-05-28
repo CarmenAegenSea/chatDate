@@ -1,5 +1,5 @@
 // 游戏陪玩模块（按需加载：new Function 调用，参数已注入）
-// 参数: currentUser, container, toast, apiGet, apiPut
+// 参数: currentUser, container, toast, api
 
 // 获取或创建陪玩账号
 async function getOrCreatePlayer() {
@@ -11,17 +11,17 @@ async function getOrCreatePlayer() {
 
 // 获取游戏选项列表
 async function getGameOptions() {
-    return apiGet('/api/game-options');
+    return api('GET', '/api/game-options');
 }
 
 // 保存游戏选择
 async function saveGames(playerId, games) {
-    return apiPut('/api/player/' + playerId + '/games', { games: games });
+    return api('PUT', '/api/player/' + playerId + '/games', { games: games });
 }
 
 // 获取玩家已选游戏
 async function getPlayerGames(playerId) {
-    return apiGet('/api/player/' + playerId + '/games');
+    return api('GET', '/api/player/' + playerId + '/games');
 }
 
 // 启动

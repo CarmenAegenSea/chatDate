@@ -13,4 +13,7 @@ public interface GameOptionRepository extends JpaRepository<GameOption, Long> {
 
     // 按代码查找游戏
     Optional<GameOption> findByCode(String code);
+
+    // 按代码列表批量查找
+    List<GameOption> findByCodeIn(List<String> codes);
 }

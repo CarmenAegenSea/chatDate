@@ -15,14 +15,15 @@ public class GameDetailResponse {
 
     // 陪玩人员信息
     public static class CompanionInfo {
-        private Long playerId; // 陪玩账号 ID
-        private Long userId; // 用户 ID
-        private String nickname; // 昵称
-        private String avatar; // 头像
-        private String bio; // 陪玩简介
-        private String skillLevel; // 技术水平
-        private String status; // 在线状态
-        private Integer hourlyRate; // 时薪
+        private Long playerId;
+        private Long userId;
+        private String nickname;
+        private String avatar;
+        private String bio;
+        private String skillLevel;
+        private String qualifications;
+        private String status;
+        private Integer hourlyRate;
 
         public Long getPlayerId() { return playerId; }
         public void setPlayerId(Long playerId) { this.playerId = playerId; }
@@ -36,6 +37,8 @@ public class GameDetailResponse {
         public void setBio(String bio) { this.bio = bio; }
         public String getSkillLevel() { return skillLevel; }
         public void setSkillLevel(String skillLevel) { this.skillLevel = skillLevel; }
+        public String getQualifications() { return qualifications; }
+        public void setQualifications(String qualifications) { this.qualifications = qualifications; }
         public String getStatus() { return status; }
         public void setStatus(String status) { this.status = status; }
         public Integer getHourlyRate() { return hourlyRate; }
