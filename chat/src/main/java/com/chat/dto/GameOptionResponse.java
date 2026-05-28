@@ -10,6 +10,7 @@ public class GameOptionResponse {
     private String code;                  // 游戏代码
     private String name;                  // 游戏名称
     private String category;              // 游戏分类
+    private String icon;                  // 游戏图标
 
     public static GameOptionResponse from(GameOption g) {
         GameOptionResponse r = new GameOptionResponse();
@@ -17,6 +18,7 @@ public class GameOptionResponse {
         r.setCode(g.getCode());
         r.setName(g.getName());
         r.setCategory(g.getCategory());
+        r.setIcon(g.getIcon());
         return r;
     }
 
@@ -28,4 +30,6 @@ public class GameOptionResponse {
     public void setName(String name) { this.name = name; }
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
 }

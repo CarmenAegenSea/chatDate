@@ -24,13 +24,17 @@ public class GameOption {
     @Column(name = "sort_order")
     private Integer sortOrder;            // 排序序号，同一分类内按此排序
 
+    @Column(length = 10)
+    private String icon;                  // 游戏图标（emoji）
+
     public GameOption() {}
 
-    public GameOption(String code, String name, String category, Integer sortOrder) {
+    public GameOption(String code, String name, String category, Integer sortOrder, String icon) {
         this.code = code;
         this.name = name;
         this.category = category;
         this.sortOrder = sortOrder;
+        this.icon = icon;
     }
 
     public Long getId() { return id; }
@@ -43,4 +47,6 @@ public class GameOption {
     public void setCategory(String category) { this.category = category; }
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
 }

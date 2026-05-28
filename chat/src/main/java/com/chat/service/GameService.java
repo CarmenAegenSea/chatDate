@@ -10,130 +10,159 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-// 游戏陪玩业务逻辑：游戏列表、用户资料、联机大厅、详情、陪玩
 @Service
 public class GameService {
 
-    private final GameRepository gameRepository;
-    private final GamePlayerRepository gamePlayerRepository;
+    private final GameOptionRepository gameOptionRepository;
+    private final PlayerRepository playerRepository;
+    private final PlayerGameRepository playerGameRepository;
     private final UserRepository userRepository;
 
-    public GameService(GameRepository gameRepository,
-                       GamePlayerRepository gamePlayerRepository,
+    public GameService(GameOptionRepository gameOptionRepository,
+                       PlayerRepository playerRepository,
+                       PlayerGameRepository playerGameRepository,
                        UserRepository userRepository) {
-        this.gameRepository = gameRepository;
-        this.gamePlayerRepository = gamePlayerRepository;
+        this.gameOptionRepository = gameOptionRepository;
+        this.playerRepository = playerRepository;
+        this.playerGameRepository = playerGameRepository;
         this.userRepository = userRepository;
     }
 
-    // 获取所有游戏列表
     @Transactional(readOnly = true)
     public List<GameResponse> listGames() {
-        return gameRepository.findAll().stream()
-                .map(GameResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    // 获取用户的游戏资料
-    @Transactional(readOnly = true)
-    public GamePlayerResponse getPlayerProfile(Long userId) {
-        GamePlayer gp = gamePlayerRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("游戏资料不存在"));
-        return GamePlayerResponse.from(gp);
-    }
-
-    // 检查用户是否已有游戏资料
-    @Transactional(readOnly = true)
-    public boolean hasProfile(Long userId) {
-        return gamePlayerRepository.findByUserId(userId).isPresent();
-    }
-
-    // 首次设置游戏资料（选择喜欢的游戏 + 陪玩设置）
-    @Transactional
-    public GamePlayerResponse setupProfile(Long userId, GameSetupRequest request) {
-        if (gamePlayerRepository.findByUserId(userId).isPresent()) {
-            throw new RuntimeException("游戏资料已存在");
-        }
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
-
-        Set<Game> favoriteGames = new HashSet<>(gameRepository.findAllById(
-                request.getFavoriteGameIds() != null ? request.getFavoriteGameIds() : List.of()));
-
-        GamePlayer gp = new GamePlayer();
-        gp.setUser(user);
-        gp.setFavoriteGames(favoriteGames);
-        gp.setIsCompanion(request.getIsCompanion() != null && request.getIsCompanion());
-        gp.setBio(request.getBio() != null ? request.getBio() : "");
-        return GamePlayerResponse.from(gamePlayerRepository.save(gp));
-    }
-
-    // 更新游戏资料（喜欢的游戏、陪玩设置）
-    @Transactional
-    public GamePlayerResponse updateProfile(Long userId, GameSetupRequest request) {
-        GamePlayer gp = gamePlayerRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("游戏资料不存在"));
-
-        Set<Game> favoriteGames = new HashSet<>(gameRepository.findAllById(
-                request.getFavoriteGameIds() != null ? request.getFavoriteGameIds() : List.of()));
-
-        gp.setFavoriteGames(favoriteGames);
-        gp.setIsCompanion(request.getIsCompanion() != null && request.getIsCompanion());
-        gp.setBio(request.getBio() != null ? request.getBio() : "");
-        return GamePlayerResponse.from(gamePlayerRepository.save(gp));
-    }
-
-    // 获取联机大厅数据（各游戏当前频道人数）
-    @Transactional(readOnly = true)
-    public List<GameResponse> getLobby() {
-        return gameRepository.findAll().stream()
-                .map(game -> {
-                    GameResponse r = GameResponse.from(game);
-                    r.setCurrentPlayers((int) gamePlayerRepository.countByFavoriteGamesContains(game));
+        return gameOptionRepository.findAllByOrderByCategoryAscSortOrderAsc().stream()
+                .map(g -> {
+                    GameResponse r = new GameResponse();
+                    r.setCode(g.getCode());
+                    r.setName(g.getName());
+                    r.setIcon(g.getIcon());
+                    r.setCurrentPlayers(0);
                     return r;
                 })
                 .collect(Collectors.toList());
     }
 
-    // 获取游戏详情（含陪玩列表）
+    @Transactional(readOnly = true)
+    public PlayerResponse getPlayerProfile(Long userId) {
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("游戏资料不存在"));
+        List<PlayerGame> games = playerGameRepository.findByPlayerId(player.getId());
+        return PlayerResponse.from(player, !games.isEmpty(), games);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasProfile(Long userId) {
+        return playerRepository.findByUserId(userId).isPresent();
+    }
+
     @Transactional
-    public GameDetailResponse getGameDetail(Long gameId) {
-        Game game = gameRepository.findById(gameId)
+    public PlayerResponse setupProfile(Long userId, GameSetupRequest request) {
+        if (playerRepository.findByUserId(userId).isPresent()) {
+            throw new RuntimeException("陪玩账号已存在");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("用户不存在"));
+
+        Player player = new Player();
+        player.setUser(user);
+        player.setBio(request.getBio() != null ? request.getBio() : "");
+        Player saved = playerRepository.save(player);
+
+        if (request.getGameCodes() != null && !request.getGameCodes().isEmpty()) {
+            List<PlayerGame> games = request.getGameCodes().stream()
+                    .map(code -> new PlayerGame(saved, code, ""))
+                    .collect(Collectors.toList());
+            playerGameRepository.saveAll(games);
+        }
+
+        boolean gamesSetup = !request.getGameCodes().isEmpty();
+        return PlayerResponse.from(saved, gamesSetup);
+    }
+
+    @Transactional
+    public PlayerResponse updateProfile(Long userId, GameSetupRequest request) {
+        Player player = playerRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("陪玩账号不存在"));
+
+        player.setBio(request.getBio() != null ? request.getBio() : "");
+        playerRepository.save(player);
+
+        playerGameRepository.deleteByPlayerId(player.getId());
+        playerGameRepository.flush();
+
+        if (request.getGameCodes() != null && !request.getGameCodes().isEmpty()) {
+            List<PlayerGame> games = request.getGameCodes().stream()
+                    .map(code -> new PlayerGame(player, code, ""))
+                    .collect(Collectors.toList());
+            playerGameRepository.saveAll(games);
+        }
+
+        boolean gamesSetup = request.getGameCodes() != null && !request.getGameCodes().isEmpty();
+        return PlayerResponse.from(player, gamesSetup);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GameResponse> getLobby() {
+        Map<String, Long> playerCounts = playerGameRepository.findAll().stream()
+                .collect(Collectors.groupingBy(PlayerGame::getGameCode, Collectors.counting()));
+
+        return gameOptionRepository.findAllByOrderByCategoryAscSortOrderAsc().stream()
+                .map(g -> {
+                    GameResponse r = new GameResponse();
+                    r.setCode(g.getCode());
+                    r.setName(g.getName());
+                    r.setIcon(g.getIcon());
+                    r.setCurrentPlayers(playerCounts.getOrDefault(g.getCode(), 0L).intValue());
+                    return r;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public GameDetailResponse getGameDetail(String gameCode) {
+        GameOption option = gameOptionRepository.findByCode(gameCode)
                 .orElseThrow(() -> new EntityNotFoundException("游戏不存在"));
 
-        List<GamePlayer> companions = gamePlayerRepository
-                .findByIsCompanionTrueAndFavoriteGamesContains(game);
+        GameResponse gameResp = new GameResponse();
+        gameResp.setCode(option.getCode());
+        gameResp.setName(option.getName());
+        gameResp.setIcon(option.getIcon());
+        gameResp.setCurrentPlayers((int) playerGameRepository.countByGameCode(gameCode));
 
-        GameResponse gameResp = GameResponse.from(game);
-        gameResp.setCurrentPlayers((int) gamePlayerRepository.countByFavoriteGamesContains(game));
-
-        List<GameDetailResponse.CompanionInfo> companionDTOs = companions.stream().map(c -> {
-            GameDetailResponse.CompanionInfo dto = new GameDetailResponse.CompanionInfo();
-            dto.setUserId(c.getUserId());
-            dto.setNickname(c.getUser().getNickname());
-            dto.setAvatar(c.getUser().getAvatar());
-            dto.setBio(c.getBio() != null ? c.getBio() : "");
-            return dto;
-        }).collect(Collectors.toList());
+        List<GameDetailResponse.CompanionInfo> companions = getCompanions(gameCode);
 
         GameDetailResponse detail = new GameDetailResponse();
         detail.setGame(gameResp);
-        detail.setCompanions(companionDTOs);
+        detail.setCompanions(companions);
         return detail;
     }
 
-    // 获取某游戏的所有可接单陪玩
     @Transactional(readOnly = true)
-    public List<GameDetailResponse.CompanionInfo> getCompanions(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-                .orElseThrow(() -> new EntityNotFoundException("游戏不存在"));
-        return gamePlayerRepository.findByIsCompanionTrueAndFavoriteGamesContains(game).stream().map(c -> {
+    public List<GameDetailResponse.CompanionInfo> getCompanions(String gameCode) {
+        List<PlayerGame> playerGames = playerGameRepository.findByGameCode(gameCode);
+
+        return playerGames.stream().map(pg -> {
+            Player player = pg.getPlayer();
             GameDetailResponse.CompanionInfo dto = new GameDetailResponse.CompanionInfo();
-            dto.setUserId(c.getUserId());
-            dto.setNickname(c.getUser().getNickname());
-            dto.setAvatar(c.getUser().getAvatar());
-            dto.setBio(c.getBio() != null ? c.getBio() : "");
+            dto.setPlayerId(player.getId());
+            dto.setUserId(player.getUser().getId());
+            dto.setNickname(player.getUser().getNickname());
+            dto.setAvatar(player.getUser().getAvatar());
+            dto.setBio(player.getBio() != null ? player.getBio() : "");
+            dto.setSkillLevel(pg.getSkillLevel() != null ? pg.getSkillLevel() : "");
+            dto.setStatus(player.getStatus());
+            dto.setHourlyRate(player.getHourlyRate());
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    public static class GameSetupRequest {
+        private List<String> gameCodes;
+        private String bio;
+
+        public List<String> getGameCodes() { return gameCodes; }
+        public void setGameCodes(List<String> gameCodes) { this.gameCodes = gameCodes; }
+        public String getBio() { return bio; }
+        public void setBio(String bio) { this.bio = bio; }
     }
 }

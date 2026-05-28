@@ -1,27 +1,24 @@
 package com.chat.dto;
 
-import com.chat.model.Game;
-
 // 游戏信息响应体
 public class GameResponse {
 
-    private Long id; // 游戏 ID
+    private String code; // 游戏代码
     private String name; // 游戏名称
     private String icon; // 游戏图标
     private Integer currentPlayers; // 当前频道人数
 
-    // 将游戏实体转换为响应 DTO
-    public static GameResponse from(Game game) {
+    public static GameResponse from(GameOptionResponse option) {
         GameResponse r = new GameResponse();
-        r.setId(game.getId());
-        r.setName(game.getName());
-        r.setIcon(game.getIcon());
-        r.setCurrentPlayers(game.getCurrentPlayers());
+        r.setCode(option.getCode());
+        r.setName(option.getName());
+        r.setIcon(option.getIcon());
+        r.setCurrentPlayers(0);
         return r;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getIcon() { return icon; }

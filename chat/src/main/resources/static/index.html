@@ -294,14 +294,11 @@
     <!-- 游戏设置弹窗 -->
     <div id="gameSetupModal" class="modal-overlay hidden" onclick="if(event.target===this)closeGameSetup()">
         <div class="modal-content">
-            <h3>🎮 选择你喜欢的游戏</h3>
-            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择至少一个游戏，即可开始</p>
+            <h3>🎮 选择你的陪玩游戏</h3>
+            <p style="font-size:13px;color:#999;margin-bottom:12px;">选择你擅长的游戏</p>
             <div id="gameSelectionList"></div>
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0;">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
-                    <input type="checkbox" id="isCompanionCheck" onchange="toggleBioInput()"> 我愿意成为陪玩（可接单）
-                </label>
-                <input id="companionBio" class="hidden" style="margin-top:8px;" placeholder="介绍自己，如：王者荣耀最强王者段位" maxlength="200">
+                <input id="companionBio" style="margin-top:8px;" placeholder="介绍自己，如：王者荣耀最强王者段位" maxlength="200">
             </div>
             <button onclick="saveGameSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
         </div>
@@ -747,22 +744,9 @@
 
         /* ===== 游戏陪玩模块 ===== */
         let allGames = [];
-        let selectedGameIds = new Set();
-        let currentGameId = null;
+        let selectedGameCodes = new Set();
+        let currentGameCode = null;
         let _gameSetupMode = 'setup'; // 'setup' | 'update'
-
-        const FALLBACK_GAMES = [
-            { id: 1, name: '王者荣耀', icon: '🎮' },
-            { id: 2, name: '和平精英', icon: '🔫' },
-            { id: 3, name: '原神', icon: '✨' },
-            { id: 4, name: '英雄联盟', icon: '⚔️' },
-            { id: 5, name: '绝地求生', icon: '🪂' },
-            { id: 6, name: '永劫无间', icon: '🗡️' }
-        ];
-
-        function toggleBioInput() {
-            document.getElementById('companionBio').classList.toggle('hidden', !document.getElementById('isCompanionCheck').checked);
-        }
 
         async function loadGameModule() {
             if (!currentUser) { toast('请先登录才能使用游戏功能'); return; }
@@ -783,8 +767,8 @@
                     const el = document.getElementById('gameLobbyContent');
                     el.innerHTML = '<div style="text-align:center;padding:40px 20px;">' +
                         '<div style="font-size:48px;margin-bottom:16px;">🎮</div>' +
-                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎</div>' +
-                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你喜欢的游戏</div>' +
+                        '<div style="font-size:16px;color:#333;margin-bottom:8px;">欢迎来到游戏大厅</div>' +
+                        '<div style="font-size:13px;color:#999;margin-bottom:20px;">请先设置你的陪玩资料</div>' +
                         '<button onclick="showGameSetup()" style="padding:10px 32px;font-size:15px;">开始 →</button>' +
                         '</div>';
                 }
@@ -793,15 +777,18 @@
 
         async function showGameSetup() {
             _gameSetupMode = 'setup';
-            if (!allGames.length) allGames = FALLBACK_GAMES;
-            selectedGameIds.clear();
-            document.getElementById('isCompanionCheck').checked = false;
+            if (!allGames.length) {
+                try {
+                    const res = await fetch(API + '/api/game/games');
+                    if (res.ok) allGames = await res.json();
+                } catch(e) {}
+            }
+            selectedGameCodes.clear();
             document.getElementById('companionBio').value = '';
-            document.getElementById('companionBio').classList.add('hidden');
 
             const list = document.getElementById('gameSelectionList');
             list.innerHTML = allGames.map(g =>
-                '<div class="game-option" data-id="' + g.id + '" onclick="toggleGameSelect(this)">' +
+                '<div class="game-option" data-code="' + g.code + '" onclick="toggleGameSelect(this)">' +
                 '<div class="check">✓</div>' +
                 '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
                 '<span class="gname">' + esc(g.name) + '</span></div>'
@@ -812,22 +799,21 @@
 
         function toggleGameSelect(el) {
             el.classList.toggle('selected');
-            const id = parseInt(el.dataset.id);
-            if (selectedGameIds.has(id)) selectedGameIds.delete(id);
-            else selectedGameIds.add(id);
+            const code = el.dataset.code;
+            if (selectedGameCodes.has(code)) selectedGameCodes.delete(code);
+            else selectedGameCodes.add(code);
         }
 
         function closeGameSetup() {
             document.getElementById('gameSetupModal').classList.add('hidden');
-            selectedGameIds.clear();
+            selectedGameCodes.clear();
         }
 
         async function saveGameSetup() {
-            if (selectedGameIds.size === 0) { toast('请至少选择一个游戏'); return; }
+            if (selectedGameCodes.size === 0) { toast('请至少选择一个游戏'); return; }
             try {
                 const body = {
-                    favoriteGameIds: Array.from(selectedGameIds),
-                    isCompanion: document.getElementById('isCompanionCheck').checked,
+                    gameCodes: Array.from(selectedGameCodes),
                     bio: document.getElementById('companionBio').value.trim()
                 };
                 const isUpdate = _gameSetupMode === 'update';
@@ -843,9 +829,9 @@
                 if (!res.ok) { toast(data.message || '操作失败'); return; }
                 document.getElementById('gameSetupModal').classList.add('hidden');
                 toast('保存成功！');
-                selectedGameIds.clear();
+                selectedGameCodes.clear();
                 if (isUpdate) {
-                    document.getElementById('settingsGameResult').textContent = '✅ 喜欢的游戏已更新';
+                    document.getElementById('settingsGameResult').textContent = '✅ 陪玩资料已更新';
                 } else {
                     await loadGameLobby();
                 }
@@ -867,23 +853,23 @@
                 if (!lobbyRes.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
                 if (!data.length) { el.innerHTML = '<div class="empty">暂无游戏</div>'; return; }
 
-                let favIds = [];
+                let favCodes = [];
                 if (profileRes.ok) {
                     const profile = await profileRes.json();
-                    favIds = (profile.favoriteGames || []).map(g => g.id);
+                    favCodes = (profile.games || []).map(g => g.gameCode).filter(Boolean);
                 }
 
-                const favGames = data.filter(g => favIds.includes(g.id));
-                const otherGames = data.filter(g => !favIds.includes(g.id));
+                const favGames = data.filter(g => favCodes.includes(g.code));
+                const otherGames = data.filter(g => !favCodes.includes(g.code));
 
                 function renderGameCard(g) {
-                    return '<div class="game-card" onclick="enterGame(' + g.id + ')">' +
+                    return '<div class="game-card" onclick="enterGame(\'' + g.code + '\')">' +
                         '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
                         '<div class="ginfo">' +
                         '<div class="gname">' + esc(g.name) + '</div>' +
                         '<div class="gcount">🟢 频道 <strong class="counter" data-target="' + g.currentPlayers + '">0</strong> 人</div>' +
                         '</div>' +
-                        '<button class="gbtn" onclick="event.stopPropagation();enterGame(' + g.id + ')">查看详情</button>' +
+                        '<button class="gbtn" onclick="event.stopPropagation();enterGame(\'' + g.code + '\')">查看详情</button>' +
                         '</div>';
                 }
 
@@ -921,15 +907,15 @@
             }
         }
 
-        async function enterGame(gameId) {
-            currentGameId = gameId;
+        async function enterGame(gameCode) {
+            currentGameCode = gameCode;
             document.getElementById('gameLobbyView').classList.add('hidden');
             document.getElementById('gameDetailView').classList.remove('hidden');
             const el = document.getElementById('gameDetailContent');
             el.innerHTML = '<div class="loading">加载详情...</div>';
 
             try {
-                const res = await fetch(API + '/api/game/' + gameId + '/detail');
+                const res = await fetch(API + '/api/game/' + gameCode + '/detail');
                 const data = await res.json();
                 if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
 
@@ -941,18 +927,20 @@
 
                 if (data.companions && data.companions.length > 0) {
                     html += '<h3 style="margin:16px 0 8px;font-size:15px;">🎯 可接单的陪玩 (' + data.companions.length + ')</h3>';
-                    html += data.companions.map(c =>
-                        '<div class="companion-card">' +
+                    html += data.companions.map(c => {
+                        const statusColor = c.status === 'ONLINE' ? '#52c41a' : c.status === 'BUSY' ? '#faad14' : '#d9d9d9';
+                        const statusText = c.status === 'ONLINE' ? '在线' : c.status === 'BUSY' ? '忙碌' : '离线';
+                        return '<div class="companion-card">' +
                         '<div class="cavatar">' + esc((c.nickname || '?').charAt(0)) + '</div>' +
                         '<div class="cinfo">' +
-                        '<div class="cname">' + esc(c.nickname) + '</div>' +
-                        '<div class="cbio">' + esc(c.bio || '暂无简介') + '</div>' +
+                        '<div class="cname">' + esc(c.nickname) + ' <span style="color:' + statusColor + ';font-size:11px;">● ' + esc(statusText) + '</span></div>' +
+                        '<div class="cbio">' + esc(c.bio || '暂无简介') + (c.skillLevel ? ' | 水平: ' + esc(c.skillLevel) : '') + '</div>' +
                         '</div>' +
                         '<button class="cbtn" onclick="toast(\'功能开发中，敬请期待\')">联系</button>' +
-                        '</div>'
-                    ).join('');
+                        '</div>';
+                    }).join('');
                 } else {
-                    html += '<div style="text-align:center;padding:20px;color:#ccc;font-size:14px;">暂无陪玩在线</div>';
+                    html += '<div style="text-align:center;padding:20px;color:#ccc;font-size:14px;">暂无陪玩</div>';
                 }
 
                 el.innerHTML = html;
@@ -963,7 +951,7 @@
         }
 
         function backToGameLobby() {
-            currentGameId = null;
+            currentGameCode = null;
             loadGameLobby();
         }
 
@@ -1078,24 +1066,26 @@
             if (!currentUser) { toast('请先登录'); return; }
             try {
                 const res = await fetch(API + '/api/game/player?userId=' + currentUser.id);
-                if (!res.ok) { toast('请先在游戏模块设置游戏资料'); return; }
+                if (!res.ok) { toast('请先在游戏模块设置陪玩资料'); return; }
                 const profile = await res.json();
                 _gameSetupMode = 'update';
-                if (!allGames.length) allGames = FALLBACK_GAMES;
-                selectedGameIds.clear();
-                const favIds = (profile.favoriteGames || []).map(g => g.id);
-                document.getElementById('isCompanionCheck').checked = profile.isCompanion || false;
+                if (!allGames.length) {
+                    const gr = await fetch(API + '/api/game/games');
+                    if (gr.ok) allGames = await gr.json();
+                }
+                selectedGameCodes.clear();
+                const favCodes = (profile.games || []).map(g => g.gameCode).filter(Boolean);
                 document.getElementById('companionBio').value = profile.bio || '';
-                document.getElementById('companionBio').classList.toggle('hidden', !profile.isCompanion);
 
                 const list = document.getElementById('gameSelectionList');
                 list.innerHTML = allGames.map(g =>
-                    '<div class="game-option' + (favIds.includes(g.id) ? ' selected' : '') + '" data-id="' + g.id + '" onclick="toggleGameSelect(this)">' +
+                    '<div class="game-option' + (favCodes.includes(g.code) ? ' selected' : '') + '" data-code="' + g.code + '" onclick="toggleGameSelect(this)">' +
                     '<div class="check">✓</div>' +
                     '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
                     '<span class="gname">' + esc(g.name) + '</span></div>'
                 ).join('');
-                favIds.forEach(id => selectedGameIds.add(id));
+                favCodes.forEach(code => selectedGameCodes.add(code));
+                document.getElementById('companionBio').classList.remove('hidden');
                 document.getElementById('gameSetupModal').classList.remove('hidden');
             } catch (e) { toast(e.message); }
         }
