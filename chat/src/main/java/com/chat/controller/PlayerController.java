@@ -23,6 +23,12 @@ public class PlayerController {
         this.playerService = playerService;
     }
 
+    // 获取所有陪玩账号列表
+    @GetMapping("/all")
+    public ResponseEntity<List<PlayerResponse>> listAll() {
+        return ResponseEntity.ok(playerService.listAll());
+    }
+
     // 按用户 ID 获取陪玩账号
     @GetMapping("/by-user/{userId}")
     public ResponseEntity<PlayerResponse> getByUserId(@PathVariable Long userId) {

@@ -25,6 +25,8 @@ public class Player {
     @Column(length = 20)
     private String status = "OFFLINE";    // 状态: ONLINE / OFFLINE / BUSY
 
+    private Long totalDuration = 0L;      // 总计陪玩时长（分钟）
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;      // 创建时间
 
@@ -55,4 +57,6 @@ public class Player {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Long getTotalDuration() { return totalDuration; }
+    public void setTotalDuration(Long totalDuration) { this.totalDuration = totalDuration; }
 }

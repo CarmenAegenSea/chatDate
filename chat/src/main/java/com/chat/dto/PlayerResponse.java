@@ -1,7 +1,9 @@
 package com.chat.dto;
 
 import com.chat.model.Player;
+import com.chat.model.PlayerGame;
 import java.time.LocalDateTime;
+import java.util.List;
 
 // 陪玩账号响应体
 // 包含关联 User 的 phone / nickname / avatar 字段，前端无需额外查询
@@ -17,12 +19,18 @@ public class PlayerResponse {
     private String status;              // 在线状态
     private Boolean gamesSetup;         // 是否已设置喜欢的游戏
     private LocalDateTime createdAt;    // 创建时间
+    private Long totalDuration;         // 总计陪玩时长（分钟）
+    private List<GameInfo> games;       // 玩家选择的游戏列表
 
     public static PlayerResponse from(Player player) {
-        return from(player, false);
+        return from(player, false, List.of());
     }
 
     public static PlayerResponse from(Player player, boolean gamesSetup) {
+        return from(player, gamesSetup, List.of());
+    }
+
+    public static PlayerResponse from(Player player, boolean gamesSetup, List<PlayerGame> games) {
         PlayerResponse r = new PlayerResponse();
         r.setId(player.getId());
         r.setUserId(player.getUser().getId());
@@ -34,7 +42,30 @@ public class PlayerResponse {
         r.setStatus(player.getStatus());
         r.setGamesSetup(gamesSetup);
         r.setCreatedAt(player.getCreatedAt());
+        r.setTotalDuration(player.getTotalDuration());
+        r.setGames(games.stream().map(pg -> new GameInfo(pg.getGameCode(), pg.getSkillLevel())).toList());
         return r;
+    }
+
+    // 游戏信息内部类
+    public static class GameInfo {
+        private String gameCode;
+        private String gameName;
+        private String skillLevel;
+
+        public GameInfo() {}
+
+        public GameInfo(String gameCode, String skillLevel) {
+            this.gameCode = gameCode;
+            this.skillLevel = skillLevel;
+        }
+
+        public String getGameCode() { return gameCode; }
+        public void setGameCode(String gameCode) { this.gameCode = gameCode; }
+        public String getGameName() { return gameName; }
+        public void setGameName(String gameName) { this.gameName = gameName; }
+        public String getSkillLevel() { return skillLevel; }
+        public void setSkillLevel(String skillLevel) { this.skillLevel = skillLevel; }
     }
 
     public Long getId() { return id; }
@@ -57,4 +88,8 @@ public class PlayerResponse {
     public void setGamesSetup(Boolean gamesSetup) { this.gamesSetup = gamesSetup; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Long getTotalDuration() { return totalDuration; }
+    public void setTotalDuration(Long totalDuration) { this.totalDuration = totalDuration; }
+    public List<GameInfo> getGames() { return games; }
+    public void setGames(List<GameInfo> games) { this.games = games; }
 }

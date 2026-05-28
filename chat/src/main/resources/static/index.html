@@ -85,6 +85,24 @@
         .comment-dropdown button { display: block; width: 100%; padding: 4px 10px; text-align: left; background: none; color: #ff4d4f; font-size: 12px; border-radius: 4px; }
         .comment-dropdown button:hover { background: #fff2f0; }
 
+        .companion-list-card { display: flex; align-items: center; padding: 16px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 10px; transition: all .2s; cursor: pointer; }
+        .companion-list-card:hover { border-color: #1677ff; box-shadow: 0 2px 8px rgba(22,119,255,.08); }
+        .companion-list-card .cavatar { width: 44px; height: 44px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; margin-right: 14px; flex-shrink: 0; }
+        .companion-list-card .cinfo { flex: 1; min-width: 0; }
+        .companion-list-card .cname { font-size: 15px; font-weight: 600; }
+        .companion-list-card .cmeta { font-size: 12px; color: #999; margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .companion-list-card .cmeta span { display: inline-flex; align-items: center; gap: 2px; }
+        .companion-list-card .ctag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px 4px 2px 0; background: #f0f5ff; color: #1677ff; }
+
+        .detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+        .detail-header .davatar { width: 60px; height: 60px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; flex-shrink: 0; }
+        .detail-header .dname { font-size: 20px; font-weight: 700; }
+        .detail-header .dstatus { font-size: 13px; margin-top: 2px; }
+        .detail-section { margin-bottom: 12px; }
+        .detail-section .label { font-size: 12px; color: #999; margin-bottom: 2px; }
+        .detail-section .value { font-size: 14px; color: #333; }
+        .detail-game-tag { display: inline-block; padding: 3px 12px; border-radius: 14px; font-size: 13px; margin: 3px 6px 3px 0; background: #f0f5ff; color: #1677ff; border: 1px solid #d6e4ff; }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.hidden { display: none; }
         .modal-content { background: #fff; border-radius: 12px; padding: 24px; max-width: 420px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
@@ -151,6 +169,7 @@
             <button onclick="switchTab('post')">发帖</button>
             <button onclick="switchTab('list')">列表</button>
             <button onclick="switchTab('game')">游戏</button>
+            <button onclick="switchTab('companion')">陪玩</button>
             <button onclick="switchTab('settings')">设置</button>
         </div>
 
@@ -227,6 +246,24 @@
                 <div id="gameDetailContent"></div>
             </div>
         </div>
+        <!-- 陪玩列表 -->
+        <div id="companionTab" class="hidden">
+            <div class="card">
+                <h2>所有陪玩</h2>
+                <div style="margin-bottom:12px;">
+                    <button onclick="loadCompanions()">刷新列表</button>
+                </div>
+                <div id="companionList"><div class="empty">点击"陪玩"标签加载</div></div>
+            </div>
+        </div>
+
+        <!-- 陪玩详情弹窗 -->
+        <div id="companionDetailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeCompanionDetail()">
+            <div class="modal-content" style="max-width:500px;">
+                <div id="companionDetailContent"></div>
+            </div>
+        </div>
+
         <!-- 设置 -->
         <div id="settingsTab" class="hidden">
             <div class="card">
@@ -302,16 +339,17 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏', settings: '设置' };
+            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏', companion: '陪玩', settings: '设置' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','list','detail','game','settings'].forEach(t => {
+            ['login','post','list','detail','game','companion','settings'].forEach(t => {
                 const el = document.getElementById(t + 'Tab');
                 if (el) el.classList.toggle('hidden', t !== tab);
             });
             if (tab === 'list') loadPosts();
             if (tab === 'game') loadGameModule();
+            if (tab === 'companion') loadCompanions();
             if (tab === 'settings') {
                 ['settingsNicknameResult','settingsGameResult','settingsBalanceResult'].forEach(id => {
                     document.getElementById(id).textContent = '';
@@ -927,6 +965,92 @@
         function backToGameLobby() {
             currentGameId = null;
             loadGameLobby();
+        }
+
+        /* ===== 陪玩列表页 ===== */
+        async function loadCompanions() {
+            const el = document.getElementById('companionList');
+            el.innerHTML = '<div class="loading">加载中...</div>';
+            try {
+                const res = await fetch(API + '/api/player/all');
+                const data = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                if (!data.length) { el.innerHTML = '<div class="empty">暂无陪玩</div>'; return; }
+
+                el.innerHTML = data.map(p => {
+                    const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
+                    const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
+                    const duration = formatDuration(p.totalDuration || 0);
+                    const games = (p.games || []).map(g => '<span class="ctag">' + esc(g.gameName || g.gameCode) + (g.skillLevel ? ' · ' + esc(g.skillLevel) : '') + '</span>').join('');
+                    return '<div class="companion-list-card" onclick="showCompanionDetail(' + p.id + ')">' +
+                        '<div class="cavatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
+                        '<div class="cinfo">' +
+                        '<div class="cname">' + esc(p.nickname) + ' <span style="color:' + statusColor + ';font-size:12px;">●</span> ' + esc(statusText) + '</div>' +
+                        '<div class="cmeta">' +
+                        (p.hourlyRate ? '<span>💰 ' + p.hourlyRate + ' 元/时</span>' : '') +
+                        '<span>⏱ ' + esc(duration) + '</span>' +
+                        '</div>' +
+                        '<div style="margin-top:4px;">' + games + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        function formatDuration(minutes) {
+            if (!minutes || minutes <= 0) return '暂无';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours > 0) return hours + '小时' + (mins > 0 ? mins + '分钟' : '');
+            return mins + '分钟';
+        }
+
+        async function showCompanionDetail(playerId) {
+            const el = document.getElementById('companionDetailContent');
+            el.innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('companionDetailModal').classList.remove('hidden');
+            try {
+                const res = await fetch(API + '/api/player/all');
+                const allData = await res.json();
+                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
+                const p = allData.find(x => x.id === playerId);
+                if (!p) { el.innerHTML = '<div class="empty">未找到该陪玩</div>'; return; }
+
+                const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
+                const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
+                const duration = formatDuration(p.totalDuration || 0);
+                const games = (p.games || []).map(g => '<span class="detail-game-tag">' + esc(g.gameName || g.gameCode) + ' · ' + esc(g.skillLevel || '未设置') + '</span>').join('') || '<span style="color:#ccc;">未选择游戏</span>';
+
+                let html = '<div class="detail-header">' +
+                    '<div class="davatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
+                    '<div>' +
+                    '<div class="dname">' + esc(p.nickname) + '</div>' +
+                    '<div class="dstatus"><span style="color:' + statusColor + ';">●</span> ' + esc(statusText) + '</div>' +
+                    '</div>' +
+                    '</div>';
+
+                html += '<div class="detail-section"><div class="label">个人简介</div><div class="value">' + esc(p.bio || '暂无简介') + '</div></div>';
+
+                if (p.phone) {
+                    html += '<div class="detail-section"><div class="label">手机号</div><div class="value">' + esc(p.phone) + '</div></div>';
+                }
+
+                if (p.hourlyRate) {
+                    html += '<div class="detail-section"><div class="label">时薪</div><div class="value">💰 ' + p.hourlyRate + ' 元/小时</div></div>';
+                }
+
+                html += '<div class="detail-section"><div class="label">总计陪玩时长</div><div class="value">⏱ ' + esc(duration) + '</div></div>';
+
+                html += '<div class="detail-section"><div class="label">擅长游戏</div><div>' + games + '</div></div>';
+
+                html += '<div style="margin-top:16px;text-align:center;"><button onclick="closeCompanionDetail()">关闭</button></div>';
+
+                el.innerHTML = html;
+            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
+        }
+
+        function closeCompanionDetail() {
+            document.getElementById('companionDetailModal').classList.add('hidden');
         }
 
         /* ===== 设置页 ===== */
