@@ -40,6 +40,7 @@ public class PostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setMood(request.getMood());
+        post.setType(request.getType() != null ? request.getType() : "rant");
         post.setAuthor(user);
         return PostResponse.from(postRepository.save(post));
     }
@@ -47,13 +48,22 @@ public class PostService {
     // 获取帖子列表，按时间倒序
     @Transactional(readOnly = true)
     public List<PostResponse> list() {
-        return list(null);
+        return list(null, null);
     }
 
     // 获取帖子列表，按时间倒序，带当前用户点赞状态
     @Transactional(readOnly = true)
     public List<PostResponse> list(Long currentUserId) {
-        return postRepository.findAllByOrderByCreatedAtDesc().stream()
+        return list(currentUserId, null);
+    }
+
+    // 获取帖子列表，按类型筛选，带当前用户点赞状态（type为null则查全部）
+    @Transactional(readOnly = true)
+    public List<PostResponse> list(Long currentUserId, String type) {
+        List<Post> posts = type != null && !type.isBlank()
+                ? postRepository.findByTypeIncludingNullOrderByCreatedAtDesc(type)
+                : postRepository.findAllByOrderByCreatedAtDesc();
+        return posts.stream()
                 .map(post -> {
                     boolean liked = currentUserId != null
                             && post.getLikedByUsers().stream().anyMatch(u -> u.getId().equals(currentUserId));

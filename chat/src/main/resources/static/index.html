@@ -23,6 +23,7 @@
         .mood-option:hover { border-color: #1677ff; background: #f0f5ff; }
         .mood-option.selected { border-color: #1677ff; background: #e6f4ff; color: #1677ff; }
         .mood-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 400; margin-left: 6px; vertical-align: middle; background: #f0f5ff; color: #1677ff; }
+        .type-tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 400; margin-left: 6px; vertical-align: middle; background: #fff7e6; color: #d46b08; }
         .detail-btn { background: none; border: none; color: #1677ff; font-size: 13px; cursor: pointer; padding: 0; margin-left: 8px; }
         .detail-btn:hover { color: #4096ff; }
         .back-btn { background: none; border: 1px solid #d9d9d9; color: #333; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 12px; }
@@ -167,7 +168,9 @@
         <div class="tab-bar">
             <button class="active" onclick="switchTab('login')">登录</button>
             <button onclick="switchTab('post')">发帖</button>
-            <button onclick="switchTab('list')">列表</button>
+            <button onclick="switchTab('rant')">吐槽墙</button>
+            <button onclick="switchTab('wise')">万事通</button>
+            <button onclick="switchTab('sell')">售卖墙</button>
             <button onclick="switchTab('game')">游戏</button>
             <button onclick="switchTab('companion')">陪玩</button>
             <button onclick="switchTab('settings')">设置</button>
@@ -208,25 +211,45 @@
         <!-- 发帖 -->
         <div id="postTab" class="card hidden">
             <h2>发布帖子</h2>
+            <div><label>帖子类型</label></div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="postType" value="rant" checked onchange="this.form.dataset.type=this.value"> 吐槽墙</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="postType" value="wise" onchange="this.form.dataset.type=this.value"> 万事通</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="postType" value="sell" onchange="this.form.dataset.type=this.value"> 售卖墙</label>
+            </div>
             <div><label>心情（可选）</label></div>
             <div class="mood-options" id="moodOptions">
-                <span class="mood-option" data-mood="😊开心" onclick="selectMood(this)">😊 开心</span>
-                <span class="mood-option" data-mood="😂搞笑" onclick="selectMood(this)">😂 搞笑</span>
-                <span class="mood-option" data-mood="😢难过" onclick="selectMood(this)">😢 难过</span>
-                <span class="mood-option" data-mood="😡愤怒" onclick="selectMood(this)">😡 愤怒</span>
-                <span class="mood-option" data-mood="🤔思考" onclick="selectMood(this)">🤔 思考</span>
-                <span class="mood-option" data-mood="👍推荐" onclick="selectMood(this)">👍 推荐</span>
+                <span class="mood-option" data-mood="开心" onclick="selectMood(this)">开心</span>
+                <span class="mood-option" data-mood="搞笑" onclick="selectMood(this)">搞笑</span>
+                <span class="mood-option" data-mood="难过" onclick="selectMood(this)">难过</span>
+                <span class="mood-option" data-mood="愤怒" onclick="selectMood(this)">愤怒</span>
+                <span class="mood-option" data-mood="思考" onclick="selectMood(this)">思考</span>
+                <span class="mood-option" data-mood="推荐" onclick="selectMood(this)">推荐</span>
             </div>
             <div><label>标题</label><input id="postTitle" placeholder="帖子标题" maxlength="200"></div>
             <div><label>内容</label><textarea id="postContent" placeholder="写下你的想法..."></textarea></div>
             <div class="row"><button onclick="createPost()">发布</button><span class="result" id="postResult"></span></div>
         </div>
 
-        <!-- 帖子列表 -->
-        <div id="listTab" class="card hidden">
-            <h2>帖子列表</h2>
-            <div style="margin-bottom:12px;"><button onclick="loadPosts()">刷新列表</button></div>
-            <div id="postList"></div>
+        <!-- 吐槽墙 -->
+        <div id="rantTab" class="card hidden">
+            <h2>吐槽墙</h2>
+            <div style="margin-bottom:12px;"><button onclick="loadPosts('rant')">刷新列表</button></div>
+            <div id="rantList"></div>
+        </div>
+
+        <!-- 万事通 -->
+        <div id="wiseTab" class="card hidden">
+            <h2>万事通</h2>
+            <div style="margin-bottom:12px;"><button onclick="loadPosts('wise')">刷新列表</button></div>
+            <div id="wiseList"></div>
+        </div>
+
+        <!-- 售卖墙 -->
+        <div id="sellTab" class="card hidden">
+            <h2>售卖墙</h2>
+            <div style="margin-bottom:12px;"><button onclick="loadPosts('sell')">刷新列表</button></div>
+            <div id="sellList"></div>
         </div>
 
         <!-- 帖子详情 -->
@@ -267,7 +290,7 @@
         <!-- 兴趣选择弹窗 -->
         <div id="interestModal" class="modal-overlay hidden" onclick="if(event.target===this)closeInterestModal()">
             <div class="modal-content">
-                <h3>🎮 选择你感兴趣的游戏</h3>
+                <h3>选择你感兴趣的游戏</h3>
                 <p style="font-size:13px;color:#999;margin-bottom:12px;">选择的游戏将展示在首页，其他游戏折叠在"更多频道"中</p>
                 <div id="interestGameList"></div>
                 <button onclick="saveInterestSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
@@ -329,15 +352,17 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', list: '列表', game: '游戏', companion: '陪玩', settings: '设置' };
+            const labelMap = { login: '登录', post: '发帖', rant: '吐槽墙', wise: '万事通', sell: '售卖墙', game: '游戏', companion: '陪玩', settings: '设置' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','list','detail','game','companion','settings'].forEach(t => {
+            ['login','post','rant','wise','sell','detail','game','companion','settings'].forEach(t => {
                 const el = document.getElementById(t + 'Tab');
                 if (el) el.classList.toggle('hidden', t !== tab);
             });
-            if (tab === 'list') loadPosts();
+            if (tab === 'rant') loadPosts('rant');
+            if (tab === 'wise') loadPosts('wise');
+            if (tab === 'sell') loadPosts('sell');
             if (tab === 'game') loadGameModule();
             if (tab === 'companion') loadCompanions();
             if (tab === 'settings') {
@@ -394,7 +419,7 @@
             try {
                 const data = await api('/api/auth/register', { phone, password });
                 setUser(data);
-                document.getElementById('regResult').textContent = '✅ 注册成功 (ID: ' + data.id + ')';
+                document.getElementById('regResult').textContent = '注册成功 (ID: ' + data.id + ')';
                 toast('注册成功');
             } catch (e) { toast(e.message); }
         }
@@ -406,7 +431,7 @@
             try {
                 const data = await api('/api/auth/login', { phone, password });
                 setUser(data);
-                document.getElementById('loginResult').textContent = '✅ 登录成功 (ID: ' + data.id + ')';
+                document.getElementById('loginResult').textContent = '登录成功 (ID: ' + data.id + ')';
                 toast('登录成功');
             } catch (e) { toast(e.message); }
         }
@@ -428,7 +453,7 @@
                 if (!res.ok) { toast(data.message || '修改失败 (status:' + res.status + ')'); return; }
                 setUser(data);
                 document.getElementById('nicknameInput').value = '';
-                document.getElementById('nicknameResult').textContent = '✅ 昵称已更新';
+                document.getElementById('nicknameResult').textContent = '昵称已更新';
                 toast('昵称修改成功');
             } catch (e) { toast(e.message); }
         }
@@ -444,9 +469,10 @@
             if (!currentUser) { toast('请先登录'); return; }
             const title = document.getElementById('postTitle').value.trim();
             const content = document.getElementById('postContent').value.trim();
+            const postType = document.querySelector('input[name="postType"]:checked');
             if (!title || !content) { toast('请填写标题和内容'); return; }
             try {
-                const body = { title, content };
+                const body = { title, content, type: postType ? postType.value : 'rant' };
                 if (selectedMood) body.mood = selectedMood;
                 const res = await fetch(API + '/api/posts?userId=' + currentUser.id, {
                     method: 'POST',
@@ -459,16 +485,19 @@
                 document.getElementById('postContent').value = '';
                 selectedMood = '';
                 document.querySelectorAll('#moodOptions .mood-option').forEach(o => o.classList.remove('selected'));
-                document.getElementById('postResult').textContent = '✅ 发布成功';
+                document.getElementById('postResult').textContent = '发布成功';
                 toast('发布成功');
             } catch (e) { toast(e.message); }
         }
 
-        async function loadPosts() {
-            const el = document.getElementById('postList');
+        async function loadPosts(type) {
+            const elId = type + 'List';
+            const el = document.getElementById(elId);
+            if (!el) return;
             el.innerHTML = '<div class="loading">加载中...</div>';
             try {
-                const url = API + '/api/posts' + (currentUser ? '?userId=' + currentUser.id : '');
+                let url = API + '/api/posts?type=' + type;
+                if (currentUser) url += '&userId=' + currentUser.id;
                 const res = await fetch(url);
                 const data = await res.json();
                 if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
@@ -476,8 +505,9 @@
                 el.innerHTML = data.map((p, i) => {
                     const long = p.content.length > 50;
                     const truncated = long ? esc(p.content.substring(0, 50)) + '...' : esc(p.content);
+                    const typeLabel = { rant: '吐槽墙', wise: '万事通', sell: '售卖墙' }[p.type] || '';
                     return '<div class="post-item">' +
-                    '<div class="post-title">' + esc(p.title) + (p.mood ? '<span class="mood-tag">' + esc(p.mood) + '</span>' : '') + '</div>' +
+                    '<div class="post-title">' + esc(p.title) + (p.mood ? '<span class="mood-tag">' + esc(p.mood) + '</span>' : '') + (typeLabel ? '<span class="type-tag">' + typeLabel + '</span>' : '') + '</div>' +
                     '<div class="post-meta">' +
                     (currentUser && p.author && p.author.id === currentUser.id ? esc(p.author.nickname) + ' · ' : '') +
                     fmt(p.createdAt) + '</div>' +
@@ -489,7 +519,7 @@
                     (currentUser ? '<button class="bookmark-btn' + (p.bookmarked ? ' bookmarked' : '') + '" onclick="bookmarkPost(' + p.id + ', this)">' + iconBookmark(p.bookmarked) + (p.bookmarkCount || 0) + '</button>' : '') +
                     '<button class="comment-btn" onclick="toggleComments(' + p.id + ', this)">' + iconComment() + (p.commentCount || 0) + '</button>' +
                     (currentUser && p.author.id === currentUser.id ?
-                      '<div class="post-menu-wrap" style="margin-left:auto;"><button class="post-menu-btn" onclick="event.stopPropagation();togglePostMenu(this)">···</button><div class="post-dropdown hidden"><button class="danger" onclick="deletePost(' + p.id + ', this)">🗑 删除</button></div></div>' : '') +
+                      '<div class="post-menu-wrap" style="margin-left:auto;"><button class="post-menu-btn" onclick="event.stopPropagation();togglePostMenu(this)">···</button><div class="post-dropdown hidden"><button class="danger" onclick="deletePost(' + p.id + ', this)">删除</button></div></div>' : '') +
                     '</div>' +
                     '<div class="comment-section hidden" data-post-id="' + p.id + '">' +
                     '<div class="comment-list"></div>' +
@@ -877,7 +907,7 @@
                     '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">';
 
                 if (status.joined) {
-                    html += '<span style="padding:6px 16px;border-radius:6px;background:#f0f5ff;color:#1677ff;font-size:13px;">✅ 已加入频道</span>';
+                    html += '<span style="padding:6px 16px;border-radius:6px;background:#f0f5ff;color:#1677ff;font-size:13px;">已加入频道</span>';
                     if (!status.isCompanion) {
                         html += '<button onclick="showBecomeCompanion(\'' + gameCode + '\', this)" style="padding:6px 16px;font-size:13px;background:#52c41a;">成为陪玩</button>';
                     } else {
@@ -1058,7 +1088,7 @@
                 if (!res.ok) { toast(data.message || '修改失败'); return; }
                 setUser(data);
                 document.getElementById('settingsNickname').value = '';
-                document.getElementById('settingsNicknameResult').textContent = '✅ 昵称已更新';
+                document.getElementById('settingsNicknameResult').textContent = '昵称已更新';
                 toast('昵称修改成功');
             } catch (e) { toast(e.message); }
         }
@@ -1078,12 +1108,12 @@
                 if (!res.ok) { toast(data.message || '充值失败'); return; }
                 setUser(data);
                 document.getElementById('settingsBalance').value = '';
-                document.getElementById('settingsBalanceResult').textContent = '✅ 充值成功，当前余额: ' + (data.balance || 0);
+                document.getElementById('settingsBalanceResult').textContent = '充值成功，当前余额: ' + (data.balance || 0);
                 toast('充值成功');
             } catch (e) { toast(e.message); }
         }
 
-        loadPosts();
+        // 初始显示登录页
     </script>
 </body>
 </html>

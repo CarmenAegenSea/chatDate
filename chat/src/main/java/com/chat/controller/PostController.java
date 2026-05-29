@@ -32,10 +32,11 @@ public class PostController {
                 .body(postService.create(userId, request));
     }
 
-    // 获取帖子列表（按发布时间倒序），可选传 userId 获取点赞状态
+    // 获取帖子列表（按发布时间倒序），可选传 userId 获取点赞状态，可选传 type 筛选类型
     @GetMapping
-    public ResponseEntity<List<PostResponse>> list(@RequestParam(required = false) Long userId) {
-        return ResponseEntity.ok(postService.list(userId));
+    public ResponseEntity<List<PostResponse>> list(@RequestParam(required = false) Long userId,
+                                                    @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(postService.list(userId, type));
     }
 
     // 获取帖子详情，可选传 userId 获取点赞状态

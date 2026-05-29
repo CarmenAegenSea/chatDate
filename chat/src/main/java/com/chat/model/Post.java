@@ -34,6 +34,9 @@ public class Post {
     @Column(length = 20)
     private String mood; // 心情 / 标签
 
+    @Column(length = 20)
+    private String type; // 帖子类型: rant(吐槽墙) / wise(万事通) / sell(售卖墙)
+
     @Column(name = "`like`")
     private Integer likeCount = 0;
 
@@ -85,6 +88,8 @@ public class Post {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public String getMood() { return mood; }
     public void setMood(String mood) { this.mood = mood; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     public Integer getBookmarkCount() { return bookmarkCount; }

@@ -15,10 +15,14 @@ public class PostRequest {
 
     private String mood; // 心情 / 标签（可选）
 
+    private String type; // 帖子类型: rant(吐槽墙) / wise(万事通) / sell(售卖墙)，不传默认 rant
+
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
     public String getMood() { return mood; }
     public void setMood(String mood) { this.mood = mood; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }

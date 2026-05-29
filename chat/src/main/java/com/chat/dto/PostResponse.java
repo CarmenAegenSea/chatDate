@@ -17,6 +17,7 @@ public class PostResponse {
     private Integer bookmarkCount;
     private Boolean bookmarked;
     private Integer commentCount;
+    private String type;
 
     public static PostResponse from(Post post) {
         PostResponse resp = new PostResponse();
@@ -26,6 +27,7 @@ public class PostResponse {
         resp.setAuthor(UserResponse.from(post.getAuthor()));
         resp.setCreatedAt(post.getCreatedAt());
         resp.setMood(post.getMood());
+        resp.setType(post.getType());
         resp.setLikeCount(post.getLikeCount());
         resp.setBookmarkCount(post.getBookmarkCount());
         resp.setCommentCount(post.getCommentCount());
@@ -63,4 +65,6 @@ public class PostResponse {
     public void setBookmarked(Boolean bookmarked) { this.bookmarked = bookmarked; }
     public Integer getCommentCount() { return commentCount; }
     public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 }
