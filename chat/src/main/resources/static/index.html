@@ -86,28 +86,6 @@
         .comment-dropdown button { display: block; width: 100%; padding: 4px 10px; text-align: left; background: none; color: #ff4d4f; font-size: 12px; border-radius: 4px; }
         .comment-dropdown button:hover { background: #fff2f0; }
 
-        .companion-list-card { display: flex; align-items: center; padding: 16px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 10px; transition: all .2s; cursor: pointer; }
-        .companion-list-card:hover { border-color: #1677ff; box-shadow: 0 2px 8px rgba(22,119,255,.08); }
-        .companion-list-card .cavatar { width: 44px; height: 44px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; margin-right: 14px; flex-shrink: 0; }
-        .companion-list-card .cinfo { flex: 1; min-width: 0; }
-        .companion-list-card .cname { font-size: 15px; font-weight: 600; }
-        .companion-list-card .cmeta { font-size: 12px; color: #999; margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
-        .companion-list-card .cmeta span { display: inline-flex; align-items: center; gap: 2px; }
-        .companion-list-card .ctag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px 4px 2px 0; background: #f0f5ff; color: #1677ff; }
-
-        .detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-        .detail-header .davatar { width: 60px; height: 60px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; flex-shrink: 0; }
-        .detail-header .dname { font-size: 20px; font-weight: 700; }
-        .detail-header .dstatus { font-size: 13px; margin-top: 2px; }
-        .detail-section { margin-bottom: 12px; }
-        .detail-section .label { font-size: 12px; color: #999; margin-bottom: 2px; }
-        .detail-section .value { font-size: 14px; color: #333; }
-        .detail-game-tag { display: inline-block; padding: 3px 12px; border-radius: 14px; font-size: 13px; margin: 3px 6px 3px 0; background: #f0f5ff; color: #1677ff; border: 1px solid #d6e4ff; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-overlay.hidden { display: none; }
-        .modal-content { background: #fff; border-radius: 12px; padding: 24px; max-width: 420px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
-        .modal-content h3 { font-size: 18px; margin-bottom: 16px; }
         .game-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #e8e8e8; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all .2s; }
         .game-option:hover { border-color: #1677ff; background: #f0f5ff; }
         .game-option.selected { border-color: #1677ff; background: #e6f4ff; }
@@ -125,33 +103,18 @@
         .game-card .gcount strong { color: #1677ff; font-size: 18px; }
         .game-card .gbtn { padding: 6px 18px; font-size: 13px; }
 
-        .companion-card { display: flex; align-items: center; padding: 12px; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px; }
-        .companion-card .cavatar { width: 36px; height: 36px; border-radius: 50%; background: #1677ff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
-        .companion-card .cinfo { flex: 1; }
-        .companion-card .cname { font-size: 14px; font-weight: 600; }
-        .companion-card .cbio { font-size: 12px; color: #999; margin-top: 2px; }
-        .companion-card .cbtn { padding: 4px 14px; font-size: 12px; }
         .more-toggle { display: block; width: 100%; padding: 10px; text-align: center; background: #fafafa; border: 1px dashed #d9d9d9; border-radius: 8px; font-size: 14px; color: #666; cursor: pointer; margin-top: 8px; transition: all .2s; }
         .more-toggle:hover { background: #f0f5ff; border-color: #1677ff; color: #1677ff; }
-        .more-toggle .arrow { display: inline-block; transition: transform .2s; margin-left: 4px; }
-        .more-toggle .arrow.open { transform: rotate(180deg); }
-        .more-games { overflow: hidden; transition: max-height .3s ease; }
-
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 style="margin-bottom:20px;">Chat 测试面板</h1>
-        <a href="index.html" style="display:inline-block;margin-bottom:16px;color:#1677ff;">跳转到首页</a>
-
-        <div id="userSection" class="card hidden">
-            <div class="user-info">
-                <div class="avatar" id="avatarLetter">U</div>
-                <div>
-                    <div class="name" id="displayName">用户</div>
-                    <div class="phone" id="displayPhone">手机号</div>
-                    <div class="phone" style="color:#f5a623;font-size:13px;" id="displayBalance">余额: 0</div>
-                </div>
+        <!-- 用户信息卡片（登录后展示） -->
+        <div class="card user-info hidden" id="userSection">
+            <div class="avatar" id="avatarLetter">U</div>
+            <div>
+                <div class="name" id="displayName">用户</div>
+                <div class="phone" id="displayPhone">手机号</div>
             </div>
             <div style="margin-top:8px;">
                 <span class="badge">已登录</span>
@@ -172,7 +135,6 @@
             <button onclick="switchTab('wise')">万事通</button>
             <button onclick="switchTab('sell')">售卖墙</button>
             <button onclick="switchTab('game')">游戏</button>
-            <button onclick="switchTab('companion')">陪玩</button>
             <button onclick="switchTab('settings')">设置</button>
         </div>
 
@@ -269,29 +231,12 @@
                 <div id="gameDetailContent"></div>
             </div>
         </div>
-        <!-- 陪玩列表 -->
-        <div id="companionTab" class="hidden">
-            <div class="card">
-                <h2>所有陪玩</h2>
-                <div style="margin-bottom:12px;">
-                    <button onclick="loadCompanions()">刷新列表</button>
-                </div>
-                <div id="companionList"><div class="empty">点击"陪玩"标签加载</div></div>
-            </div>
-        </div>
-
-        <!-- 陪玩详情弹窗 -->
-        <div id="companionDetailModal" class="modal-overlay hidden" onclick="if(event.target===this)closeCompanionDetail()">
-            <div class="modal-content" style="max-width:500px;">
-                <div id="companionDetailContent"></div>
-            </div>
-        </div>
 
         <!-- 兴趣选择弹窗 -->
-        <div id="interestModal" class="modal-overlay hidden" onclick="if(event.target===this)closeInterestModal()">
-            <div class="modal-content">
-                <h3>选择你感兴趣的游戏</h3>
-                <p style="font-size:13px;color:#999;margin-bottom:12px;">选择的游戏将展示在首页，其他游戏折叠在"更多频道"中</p>
+        <div id="interestModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;" onclick="if(event.target===this)closeInterestModal()">
+            <div style="background:#fff;border-radius:12px;padding:24px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.15);">
+                <h3 style="font-size:18px;margin-bottom:16px;">选择你感兴趣的游戏频道</h3>
+                <p style="font-size:13px;color:#999;margin-bottom:12px;">选中的频道将在首页平铺展示，其余折叠在「更多频道」中</p>
                 <div id="interestGameList"></div>
                 <button onclick="saveInterestSetup()" style="margin-top:16px;width:100%;padding:10px;font-size:15px;">确认</button>
             </div>
@@ -308,12 +253,9 @@
                 </div>
             </div>
             <div class="card">
-                <h2>充值余额</h2>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                    <input id="settingsBalance" type="number" min="1" style="flex:1;min-width:120px;" placeholder="输入充值金额">
-                    <button onclick="topUpBalance()">充值</button>
-                    <span class="result" id="settingsBalanceResult"></span>
-                </div>
+                <h2>游戏喜好</h2>
+                <p style="font-size:13px;color:#999;margin-bottom:8px;">设置感兴趣的游戏频道，它们将在首页平铺展示</p>
+                <button onclick="showInterestSetup()">修改游戏喜好</button>
             </div>
         </div>
     </div>
@@ -352,21 +294,24 @@
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
-            const labelMap = { login: '登录', post: '发帖', rant: '吐槽墙', wise: '万事通', sell: '售卖墙', game: '游戏', companion: '陪玩', settings: '设置' };
+            const labelMap = { login: '登录', post: '发帖', rant: '吐槽墙', wise: '万事通', sell: '售卖墙', game: '游戏频道', settings: '设置' };
             document.querySelectorAll('.tab-bar button').forEach(b => {
                 if (b.textContent === labelMap[tab]) b.classList.add('active');
             });
-            ['login','post','rant','wise','sell','detail','game','companion','settings'].forEach(t => {
+            ['login','post','rant','wise','sell','detail','game','settings'].forEach(t => {
                 const el = document.getElementById(t + 'Tab');
                 if (el) el.classList.toggle('hidden', t !== tab);
             });
+            // 记录帖子列表的 tab 类型，供 backToList 使用
+            if (tab === 'rant' || tab === 'wise' || tab === 'sell') {
+                window._lastListTab = tab;
+            }
             if (tab === 'rant') loadPosts('rant');
             if (tab === 'wise') loadPosts('wise');
             if (tab === 'sell') loadPosts('sell');
             if (tab === 'game') loadGameModule();
-            if (tab === 'companion') loadCompanions();
             if (tab === 'settings') {
-                ['settingsNicknameResult','settingsBalanceResult'].forEach(id => {
+                ['settingsNicknameResult'].forEach(id => {
                     document.getElementById(id).textContent = '';
                 });
             }
@@ -376,7 +321,6 @@
             currentUser = data;
             document.getElementById('displayName').textContent = data.nickname;
             document.getElementById('displayPhone').textContent = data.phone || '第三方账号';
-            document.getElementById('displayBalance').textContent = '\u4F59\u989D: ' + (data.balance != null ? data.balance.toLocaleString() : '0');
             document.getElementById('avatarLetter').textContent = data.nickname.charAt(0);
             document.getElementById('userSection').classList.remove('hidden');
         }
@@ -584,11 +528,8 @@
                     return;
                 }
                 toast('删除成功');
-                btn.closest('.post-item').remove();
-                const list = document.getElementById('postList');
-                if (!list.querySelector('.post-item')) {
-                    list.innerHTML = '<div class="empty">暂无帖子</div>';
-                }
+                const item = btn.closest('.post-item');
+                if (item) item.remove();
             } catch (e) { toast(e.message); }
         }
 
@@ -682,12 +623,14 @@
         }
 
         function viewDetail(postId) {
+            // 记录当前列表类型，供返回时使用
+            if (!window._lastListTab) window._lastListTab = 'rant';
             switchTab('detail');
             loadPostDetail(postId);
         }
 
         function backToList() {
-            switchTab('list');
+            switchTab(window._lastListTab || 'rant');
         }
 
         async function loadPostDetail(postId) {
@@ -748,23 +691,6 @@
                 '</div></div>';
         }
 
-        /* ===== 记数器动画 ===== */
-        function animateCounter(el, duration) {
-            duration = duration || 600;
-            const target = parseInt(el.getAttribute('data-target')) || 0;
-            if (target === 0) return;
-            const start = performance.now();
-            function step(now) {
-                const elapsed = now - start;
-                const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                el.textContent = Math.floor(eased * target);
-                if (progress < 1) requestAnimationFrame(step);
-                else el.textContent = target;
-            }
-            requestAnimationFrame(step);
-        }
-
         /* ===== 游戏模块 ===== */
         let currentGameCode = null;
         let interestSelectedCodes = new Set();
@@ -800,7 +726,7 @@
                     '<span class="gicon">' + (g.icon || '🎮') + '</span>' +
                     '<span class="gname">' + esc(g.name) + '</span></div>'
                 ).join('');
-                document.getElementById('interestModal').classList.remove('hidden');
+                document.getElementById('interestModal').style.display = 'flex';
             } catch (e) { document.getElementById('gameLobbyContent').innerHTML = '<div class="empty">加载失败</div>'; }
         }
 
@@ -812,7 +738,7 @@
         }
 
         function closeInterestModal() {
-            document.getElementById('interestModal').classList.add('hidden');
+            document.getElementById('interestModal').style.display = 'none';
             interestSelectedCodes.clear();
         }
 
@@ -825,7 +751,7 @@
                     body: JSON.stringify({ gameCodes: Array.from(interestSelectedCodes) })
                 });
                 if (!res.ok) { toast('保存失败'); return; }
-                document.getElementById('interestModal').classList.add('hidden');
+                document.getElementById('interestModal').style.display = 'none';
                 interestSelectedCodes.clear();
                 loadGameLobby();
             } catch (e) { toast(e.message); }
@@ -893,7 +819,7 @@
                 const data = await detailRes.json();
                 if (!detailRes.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
 
-                let status = { joined: false, isCompanion: false };
+                let status = { joined: false };
                 if (statusRes && statusRes.ok) status = await statusRes.json();
 
                 let html = '<div class="card" style="padding:16px;margin-bottom:12px;">' +
@@ -908,11 +834,6 @@
 
                 if (status.joined) {
                     html += '<span style="padding:6px 16px;border-radius:6px;background:#f0f5ff;color:#1677ff;font-size:13px;">已加入频道</span>';
-                    if (!status.isCompanion) {
-                        html += '<button onclick="showBecomeCompanion(\'' + gameCode + '\', this)" style="padding:6px 16px;font-size:13px;background:#52c41a;">成为陪玩</button>';
-                    } else {
-                        html += '<span style="padding:6px 16px;border-radius:6px;background:#fff7e6;color:#fa8c16;font-size:13px;">🎯 已是陪玩</span>';
-                    }
                 } else {
                     html += '<button onclick="joinChannel(\'' + gameCode + '\')" style="padding:6px 16px;font-size:13px;">加入频道</button>';
                 }
@@ -933,48 +854,6 @@
             } catch (e) { toast(e.message); }
         }
 
-        async function showBecomeCompanion(gameCode, btn) {
-            const existing = document.getElementById('companionForm');
-            if (existing) {
-                existing.remove();
-                return;
-            }
-            const formHtml = '<div class="card" id="companionForm" style="margin-top:12px;border:2px solid #52c41a;">' +
-                '<h3 style="font-size:16px;margin-bottom:12px;">成为 ' + esc(gameCode) + ' 频道陪玩</h3>' +
-                '<div><label>游戏 ID</label><input id="companionGameId" value="' + esc(gameCode) + '" readonly style="background:#f5f5f5;color:#999;"></div>' +
-                '<div><label>资历（段位/时长/经验等）</label><textarea id="companionQualifications" placeholder="例如：王者荣耀最强王者50星，陪玩经验2年" maxlength="500"></textarea></div>' +
-                '<div style="margin-bottom:10px;">' +
-                '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">' +
-                '<input type="checkbox" id="companionRulesCheck"> 我已阅读并接受 <a href="#" onclick="event.preventDefault();toast(\'陪玩条例：1.不得爽约 2.不得消极游戏 3.保持良好的沟通\')">陪玩条例</a>' +
-                '</label>' +
-                '</div>' +
-                '<button onclick="submitBecomeCompanion(\'' + gameCode + '\')" style="width:100%;padding:10px;font-size:15px;background:#52c41a;">提交申请</button>' +
-                '<div class="result" id="companionResult"></div>' +
-                '</div>';
-
-            btn.parentElement.insertAdjacentHTML('afterend', formHtml);
-        }
-
-        async function submitBecomeCompanion(gameCode) {
-            if (!currentUser) { toast('请先登录'); return; }
-            const qualifications = document.getElementById('companionQualifications').value.trim();
-            const acceptedRules = document.getElementById('companionRulesCheck').checked;
-            if (!qualifications) { toast('请填写资历信息'); return; }
-            if (!acceptedRules) { toast('请接受陪玩条例'); return; }
-
-            try {
-                const res = await fetch(API + '/api/game/' + gameCode + '/become-companion?userId=' + currentUser.id, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ qualifications, acceptedRules })
-                });
-                const data = await res.json();
-                if (!res.ok) { toast(data.message || '提交失败'); return; }
-                toast('已成为陪玩！');
-                enterGame(gameCode);
-            } catch (e) { toast(e.message); }
-        }
-
         function toggleMoreGames(btn) {
             const container = btn.nextElementSibling;
             const arrow = btn.querySelector('.arrow');
@@ -986,90 +865,6 @@
                 container.style.maxHeight = container.scrollHeight + 'px';
                 arrow.classList.add('open');
             }
-        }
-
-        /* ===== 陪玩列表页 ===== */
-        async function loadCompanions() {
-            const el = document.getElementById('companionList');
-            el.innerHTML = '<div class="loading">加载中...</div>';
-            try {
-                const res = await fetch(API + '/api/player/all');
-                const data = await res.json();
-                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
-                if (!data.length) { el.innerHTML = '<div class="empty">暂无陪玩</div>'; return; }
-
-                el.innerHTML = data.map(p => {
-                    const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
-                    const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
-                    const duration = formatDuration(p.totalDuration || 0);
-                    const companionGames = (p.games || []).filter(g => g.isCompanion);
-                    const games = companionGames.map(g => '<span class="ctag">🎯 ' + esc(g.gameCode) + '</span>').join('');
-                    return '<div class="companion-list-card" onclick="showCompanionDetail(' + p.id + ')">' +
-                        '<div class="cavatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
-                        '<div class="cinfo">' +
-                        '<div class="cname">' + esc(p.nickname) + ' <span style="color:' + statusColor + ';font-size:12px;">●</span> ' + esc(statusText) + '</div>' +
-                        '<div class="cmeta">' +
-                        (p.hourlyRate ? '<span>💰 ' + p.hourlyRate + ' 元/时</span>' : '') +
-                        '<span>⏱ ' + esc(duration) + '</span>' +
-                        '</div>' +
-                        '<div style="margin-top:4px;">' + (games || '<span style="color:#ccc;font-size:12px;">尚未成为陪玩</span>') + '</div>' +
-                        '</div>' +
-                        '</div>';
-                }).join('');
-            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
-        }
-
-        function formatDuration(minutes) {
-            if (!minutes || minutes <= 0) return '暂无';
-            const hours = Math.floor(minutes / 60);
-            const mins = minutes % 60;
-            if (hours > 0) return hours + '小时' + (mins > 0 ? mins + '分钟' : '');
-            return mins + '分钟';
-        }
-
-        async function showCompanionDetail(playerId) {
-            const el = document.getElementById('companionDetailContent');
-            el.innerHTML = '<div class="loading">加载中...</div>';
-            document.getElementById('companionDetailModal').classList.remove('hidden');
-            try {
-                const res = await fetch(API + '/api/player/all');
-                const allData = await res.json();
-                if (!res.ok) { el.innerHTML = '<div class="empty">加载失败</div>'; return; }
-                const p = allData.find(x => x.id === playerId);
-                if (!p) { el.innerHTML = '<div class="empty">未找到该陪玩</div>'; return; }
-
-                const statusColor = p.status === 'ONLINE' ? '#52c41a' : p.status === 'BUSY' ? '#faad14' : '#d9d9d9';
-                const statusText = p.status === 'ONLINE' ? '在线' : p.status === 'BUSY' ? '忙碌' : '离线';
-                const duration = formatDuration(p.totalDuration || 0);
-                const companionGames = (p.games || []).filter(g => g.isCompanion);
-                const games = companionGames.map(g => '<span class="detail-game-tag">🎯 ' + esc(g.gameCode) + (g.qualifications ? ' · ' + esc(g.qualifications) : '') + '</span>').join('') || '<span style="color:#ccc;">尚未成为陪玩</span>';
-
-                let html = '<div class="detail-header">' +
-                    '<div class="davatar">' + esc((p.nickname || '?').charAt(0)) + '</div>' +
-                    '<div>' +
-                    '<div class="dname">' + esc(p.nickname) + '</div>' +
-                    '<div class="dstatus"><span style="color:' + statusColor + ';">●</span> ' + esc(statusText) + '</div>' +
-                    '</div>' +
-                    '</div>';
-
-                html += '<div class="detail-section"><div class="label">个人简介</div><div class="value">' + esc(p.bio || '暂无简介') + '</div></div>';
-
-                if (p.hourlyRate) {
-                    html += '<div class="detail-section"><div class="label">时薪</div><div class="value">💰 ' + p.hourlyRate + ' 元/小时</div></div>';
-                }
-
-                html += '<div class="detail-section"><div class="label">总计陪玩时长</div><div class="value">⏱ ' + esc(duration) + '</div></div>';
-
-                html += '<div class="detail-section"><div class="label">陪玩游戏</div><div>' + games + '</div></div>';
-
-                html += '<div style="margin-top:16px;text-align:center;"><button onclick="closeCompanionDetail()">关闭</button></div>';
-
-                el.innerHTML = html;
-            } catch (e) { el.innerHTML = '<div class="empty">请求失败: ' + e.message + '</div>'; }
-        }
-
-        function closeCompanionDetail() {
-            document.getElementById('companionDetailModal').classList.add('hidden');
         }
 
         /* ===== 设置页 ===== */
@@ -1090,26 +885,6 @@
                 document.getElementById('settingsNickname').value = '';
                 document.getElementById('settingsNicknameResult').textContent = '昵称已更新';
                 toast('昵称修改成功');
-            } catch (e) { toast(e.message); }
-        }
-
-        async function topUpBalance() {
-            if (!currentUser) { toast('请先登录'); return; }
-            const amount = parseInt(document.getElementById('settingsBalance').value);
-            if (!amount || amount <= 0) { toast('请输入有效的充值金额'); return; }
-            try {
-                const res = await fetch(API + '/api/auth/balance?userId=' + currentUser.id, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount })
-                });
-                const text = await res.text();
-                const data = JSON.parse(text);
-                if (!res.ok) { toast(data.message || '充值失败'); return; }
-                setUser(data);
-                document.getElementById('settingsBalance').value = '';
-                document.getElementById('settingsBalanceResult').textContent = '充值成功，当前余额: ' + (data.balance || 0);
-                toast('充值成功');
             } catch (e) { toast(e.message); }
         }
 

@@ -24,8 +24,6 @@ public class User {
     @Column(length = 128)
     private String password; // BCrypt 加密后的密码（第三方登录用户无密码）
 
-    private Long balance = 0L; // 余额
-
     @Column(length = 20)
     private String oauthProvider; // 第三方登录提供商：wechat / qq
 
@@ -61,8 +59,6 @@ public class User {
     public void setAvatar(String avatar) { this.avatar = avatar; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
-    public Long getBalance() { return balance; }
-    public void setBalance(Long balance) { this.balance = balance; }
     public String getOauthProvider() { return oauthProvider; }
     public void setOauthProvider(String oauthProvider) { this.oauthProvider = oauthProvider; }
     public String getOauthOpenId() { return oauthOpenId; }

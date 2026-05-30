@@ -10,8 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 // 认证相关接口：注册、登录、修改昵称
 @RestController
 @RequestMapping("/api/auth")
@@ -49,11 +47,4 @@ public class AuthController {
         return ResponseEntity.ok(userService.updateNickname(userId, request));
     }
 
-    // 充值余额
-    @PostMapping("/balance")
-    public ResponseEntity<UserResponse> topUpBalance(
-            @RequestParam Long userId,
-            @RequestBody Map<String, Long> request) {
-        return ResponseEntity.ok(userService.topUpBalance(userId, request.get("amount")));
-    }
 }

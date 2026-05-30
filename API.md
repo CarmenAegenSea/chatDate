@@ -14,6 +14,14 @@
   - [点赞帖子](#点赞帖子)
   - [获取评论列表](#获取评论列表)
   - [添加评论](#添加评论)
+- [游戏频道](#游戏频道)
+  - [获取游戏列表](#获取游戏列表)
+  - [获取游戏大厅](#获取游戏大厅)
+  - [获取游戏详情](#获取游戏详情)
+  - [加入频道](#加入频道)
+  - [查询频道状态](#查询频道状态)
+  - [检查兴趣是否已设置](#检查兴趣是否已设置)
+  - [保存游戏兴趣](#保存游戏兴趣)
 
 ---
 
@@ -459,7 +467,7 @@ DELETE /api/posts/{id}/comments/{commentId}?userId=1
 
 ---
 
-## 游戏陪玩
+## 游戏频道
 
 ### 获取游戏列表
 
@@ -473,26 +481,108 @@ GET /api/game/games
 
 ```json
 [
-  { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
-  { "id": 2, "name": "和平精英", "icon": "🔫", "currentPlayers": 28 }
+  { "code": "LOL", "name": "英雄联盟", "icon": "⚔️", "currentPlayers": 0 },
+  { "code": "WZRY", "name": "王者荣耀", "icon": "🎮", "currentPlayers": 0 }
 ]
 ```
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `id` | long | 游戏唯一 ID |
+| `code` | string | 游戏唯一代码 |
 | `name` | string | 游戏名称 |
 | `icon` | string | 游戏图标 |
-| `currentPlayers` | int | 当前在线人数 |
+| `currentPlayers` | int | 当前频道人数 |
 
 ---
 
-### 检查用户游戏资料
+### 获取游戏大厅
+
+> 展示所有游戏及其当前频道人数。传 userId 时返回兴趣标记，前端据此平铺或折叠展示。
 
 **请求**
 
 ```
-GET /api/game/player/check?userId=1
+GET /api/game/lobby
+GET /api/game/lobby?userId=1   （传 userId 时响应中 `interested` 字段有效）
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | long | 否 | 当前登录用户 ID，传此参数时响应中 `interested` 字段有效 |
+
+**成功响应 200**
+
+```json
+[
+  { "code": "LOL", "name": "英雄联盟", "icon": "⚔️", "currentPlayers": 42, "interested": true },
+  { "code": "WZRY", "name": "王者荣耀", "icon": "🎮", "currentPlayers": 28, "interested": false }
+]
+```
+
+---
+
+### 获取游戏详情
+
+> 展示游戏详情，含当前频道人数。
+
+**请求**
+
+```
+GET /api/game/{gameCode}/detail
+```
+
+**路径参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `gameCode` | string | 游戏代码 |
+
+**成功响应 200**
+
+```json
+{
+  "game": { "code": "WZRY", "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 }
+}
+```
+
+---
+
+### 加入频道
+
+**请求**
+
+```
+POST /api/game/{gameCode}/join?userId=1
+```
+
+**路径参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `gameCode` | string | 游戏代码 |
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | long | 是 | 用户 ID |
+
+**成功响应 200**
+
+```json
+{ "message": "已加入频道" }
+```
+
+---
+
+### 查询频道状态
+
+**请求**
+
+```
+GET /api/game/{gameCode}/status?userId=1
 ```
 
 **查询参数**
@@ -504,19 +594,19 @@ GET /api/game/player/check?userId=1
 **成功响应 200**
 
 ```json
-{
-  "hasProfile": true
-}
+{ "gameCode": "WZRY", "joined": true }
 ```
 
 ---
 
-### 获取用户游戏资料
+### 检查兴趣是否已设置
+
+> 用户首次进入游戏模块时，前端先调此接口判断是否需要弹出兴趣选择弹窗。
 
 **请求**
 
 ```
-GET /api/game/player?userId=1
+GET /api/game/interests/check?userId=1
 ```
 
 **查询参数**
@@ -528,34 +618,19 @@ GET /api/game/player?userId=1
 **成功响应 200**
 
 ```json
-{
-  "userId": 1,
-  "nickname": "张三",
-  "avatar": null,
-  "isCompanion": false,
-  "bio": "",
-  "favoriteGames": [
-    { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 }
-  ]
-}
+{ "hasInterests": true }
 ```
-
-**错误响应**
-
-| 状态码 | 说明 |
-|--------|------|
-| 404 | 游戏资料不存在 |
 
 ---
 
-### 首次设置游戏资料
+### 保存游戏兴趣
 
-> 用户首次进入游戏模块时，选择喜欢的游戏，可选成为陪玩。
+> 保存用户感兴趣的游戏频道（先删后插）。
 
 **请求**
 
 ```
-POST /api/game/player/setup?userId=1
+POST /api/game/interests?userId=1
 Content-Type: application/json
 ```
 
@@ -569,122 +644,16 @@ Content-Type: application/json
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `favoriteGameIds` | long[] | 是 | 喜欢的游戏 ID 列表 |
-| `isCompanion` | boolean | 否 | 是否成为陪玩，默认 false |
-| `bio` | string | 否 | 陪玩简介 |
+| `gameCodes` | string[] | 是 | 感兴趣的游戏代码列表 |
 
 **示例**
 
 ```json
 {
-  "favoriteGameIds": [1, 3],
-  "isCompanion": true,
-  "bio": "王者荣耀荣耀王者段位"
+  "gameCodes": ["LOL", "WZRY", "GENSHIN"]
 }
-```
-
-**成功响应 201**
-
-```json
-{
-  "userId": 1,
-  "nickname": "张三",
-  "avatar": null,
-  "isCompanion": true,
-  "bio": "王者荣耀荣耀王者段位",
-  "favoriteGames": [
-    { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
-    { "id": 3, "name": "原神", "icon": "✨", "currentPlayers": 35 }
-  ]
-}
-```
-
-**错误响应**
-
-| 状态码 | 说明 |
-|--------|------|
-| 400 | 游戏资料已存在 / 用户不存在 |
-
----
-
-### 获取所有游戏
-
-> 展示所有游戏及其当前在线人数。
-
-**请求**
-
-```
-GET /api/game/lobby
 ```
 
 **成功响应 200**
 
-```json
-[
-  { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
-  { "id": 2, "name": "和平精英", "icon": "🔫", "currentPlayers": 28 },
-  { "id": 3, "name": "原神", "icon": "✨", "currentPlayers": 35 }
-]
-```
-
----
-
-### 获取游戏详情
-
-> 展示游戏详情，包括可接单的陪玩人员。
-
-**请求**
-
-```
-GET /api/game/{gameId}/detail
-```
-
-**路径参数**
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `gameId` | long | 游戏 ID |
-
-**成功响应 200**
-
-```json
-{
-  "game": { "id": 1, "name": "王者荣耀", "icon": "🎮", "currentPlayers": 42 },
-  "companions": [
-    { "userId": 1, "nickname": "张三", "avatar": null, "bio": "荣耀王者段位" }
-  ]
-}
-```
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `game` | object | 游戏信息（同 GameResponse） |
-| `companions` | array | 可接单的陪玩人员列表 |
-| `companions[].userId` | long | 陪玩用户 ID |
-| `companions[].nickname` | string | 陪玩昵称 |
-| `companions[].avatar` | string | 陪玩头像 |
-| `companions[].bio` | string | 陪玩简介 |
-
----
-
-### 获取陪玩列表
-
-**请求**
-
-```
-GET /api/game/{gameId}/companions
-```
-
-**路径参数**
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `gameId` | long | 游戏 ID |
-
-**成功响应 200**
-
-```json
-[
-  { "userId": 1, "nickname": "张三", "avatar": null, "bio": "荣耀王者段位" }
-]
-```
+无响应体。

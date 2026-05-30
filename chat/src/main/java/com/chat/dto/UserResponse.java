@@ -9,7 +9,6 @@ public class UserResponse {
     private String phone;
     private String nickname;
     private String avatar;
-    private Long balance;    // 余额
 
     // 将 User 实体转换为响应 DTO
     public static UserResponse from(User user) {
@@ -18,7 +17,6 @@ public class UserResponse {
         resp.setPhone(user.getPhone());
         resp.setNickname(user.getNickname());
         resp.setAvatar(user.getAvatar());
-        resp.setBalance(user.getBalance());
         return resp;
     }
 
@@ -30,6 +28,4 @@ public class UserResponse {
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
-    public Long getBalance() { return balance; }
-    public void setBalance(Long balance) { this.balance = balance; }
 }
