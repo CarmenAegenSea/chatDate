@@ -15,6 +15,11 @@ public class User {
     @Column(unique = true, length = 20)
     private String phone; // 手机号（第三方登录用户无手机号）
 
+    /**
+     * 改成studentID登录
+     * 接入学校数据库
+     */
+
     @Column(nullable = false, length = 32)
     private String nickname; // 昵称
 
